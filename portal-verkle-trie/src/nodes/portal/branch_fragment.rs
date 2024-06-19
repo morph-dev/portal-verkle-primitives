@@ -1,8 +1,7 @@
 use std::array;
 
 use banderwagon::{Element, Zero};
-
-use crate::{
+use verkle_core::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
     msm::{DefaultMsm, MultiScalarMultiplicator},
 };

@@ -1,10 +1,8 @@
 use banderwagon::{Element, Fr, Zero};
-
-use crate::{
+use verkle_core::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    nodes::leaf::LeafNode,
-    types::TrieValue,
+    TrieValue,
 };
 
 pub struct LeafFragmentNode {
@@ -33,7 +31,7 @@ impl LeafFragmentNode {
                 .filter_map(|(child_index, child)| child.as_ref().map(|child| (child_index, child)))
                 .flat_map(|(child_index, child)| {
                     let (low_index, high_index) = Self::bases_indices(parent_index, child_index);
-                    let (low_value, high_value) = LeafNode::split_trie_value(child);
+                    let (low_value, high_value) = child.split();
                     [(low_index, low_value), (high_index, high_value)]
                 })
                 .collect::<Vec<_>>()
@@ -52,11 +50,11 @@ impl LeafFragmentNode {
     }
 
     pub fn set(&mut self, child_index: usize, child: TrieValue) {
-        let (new_low_value, new_high_value) = LeafNode::split_trie_value(&child);
+        let (new_low_value, new_high_value) = child.split();
         let (old_low_value, old_high_value) =
             self.children[child_index].replace(child).map_or_else(
                 || (Fr::zero(), Fr::zero()),
-                |old_child_value| LeafNode::split_trie_value(&old_child_value),
+                |old_child_value| old_child_value.split(),
             );
 
         let (low_index, high_index) = Self::bases_indices(self.parent_index, child_index);

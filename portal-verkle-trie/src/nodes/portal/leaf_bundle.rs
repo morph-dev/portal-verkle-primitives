@@ -1,12 +1,13 @@
 use std::array;
 
 use banderwagon::{Element, Fr, PrimeField};
-
-use crate::{
-    constants::PORTAL_NETWORK_NODE_WIDTH,
+use verkle_core::{
+    constants::{
+        EXTENSION_C1_INDEX, EXTENSION_C2_INDEX, EXTENSION_MARKER_INDEX, EXTENSION_STEM_INDEX,
+        PORTAL_NETWORK_NODE_WIDTH,
+    },
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    nodes::leaf::LeafNode,
-    types::Stem,
+    Stem,
 };
 
 pub struct LeafBundleNode {
@@ -39,13 +40,13 @@ impl LeafBundleNode {
 
         let marker = 1; // Extension marker
         let commitment = DefaultMsm.commit_sparse(&[
-            (LeafNode::EXTENSION_MARKER_INDEX, Fr::from(marker)),
+            (EXTENSION_MARKER_INDEX, Fr::from(marker)),
             (
-                LeafNode::STEM_INDEX,
+                EXTENSION_STEM_INDEX,
                 Fr::from_le_bytes_mod_order(stem.as_slice()),
             ),
-            (LeafNode::C1_INDEX, c1.map_to_scalar_field()),
-            (LeafNode::C2_INDEX, c2.map_to_scalar_field()),
+            (EXTENSION_C1_INDEX, c1.map_to_scalar_field()),
+            (EXTENSION_C2_INDEX, c2.map_to_scalar_field()),
         ]);
 
         Self {
@@ -80,11 +81,11 @@ impl LeafBundleNode {
         if index < self.children.len() / 2 {
             self.c1 += diff;
             self.commitment +=
-                DefaultMsm.scalar_mul(LeafNode::C1_INDEX, self.c1.map_to_scalar_field());
+                DefaultMsm.scalar_mul(EXTENSION_C1_INDEX, self.c1.map_to_scalar_field());
         } else {
             self.c2 += diff;
             self.commitment +=
-                DefaultMsm.scalar_mul(LeafNode::C2_INDEX, self.c2.map_to_scalar_field());
+                DefaultMsm.scalar_mul(EXTENSION_C2_INDEX, self.c2.map_to_scalar_field());
         }
     }
 

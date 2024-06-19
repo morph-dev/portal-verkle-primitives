@@ -1,8 +1,7 @@
 use std::array;
 
 use banderwagon::{Element, Fr};
-
-use crate::constants::PORTAL_NETWORK_NODE_WIDTH;
+use verkle_core::constants::PORTAL_NETWORK_NODE_WIDTH;
 
 pub struct BranchBundleNode {
     commitment: Element,
