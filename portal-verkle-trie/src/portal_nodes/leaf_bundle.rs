@@ -9,7 +9,7 @@ use crate::{
     types::Stem,
 };
 
-pub struct LeafHigher {
+pub struct LeafBundle {
     version: U256,
     stem: Stem,
     commitment: Element,
@@ -18,7 +18,7 @@ pub struct LeafHigher {
     children: [Element; PORTAL_NETWORK_NODE_WIDTH],
 }
 
-impl LeafHigher {
+impl LeafBundle {
     const EXTENSION_MARKER_INDEX: usize = 0;
     const STEM_INDEX: usize = 1;
     const C1_INDEX: usize = 2;

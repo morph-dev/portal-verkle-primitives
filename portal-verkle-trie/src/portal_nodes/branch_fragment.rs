@@ -7,13 +7,13 @@ use crate::{
     msm::{DefaultMsm, MultiScalarMultiplicator},
 };
 
-pub struct BranchLower {
+pub struct BranchFragment {
     parent_index: usize,
     commitment: Element,
     children: [Fr; PORTAL_NETWORK_NODE_WIDTH],
 }
 
-impl BranchLower {
+impl BranchFragment {
     pub fn new(parent_index: usize) -> Self {
         Self::new_with_children(parent_index, array::from_fn(|_| Fr::zero()))
     }

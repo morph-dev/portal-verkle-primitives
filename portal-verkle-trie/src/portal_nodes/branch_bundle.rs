@@ -4,12 +4,12 @@ use banderwagon::{Element, Fr};
 
 use crate::constants::PORTAL_NETWORK_NODE_WIDTH;
 
-pub struct BranchHigher {
+pub struct BranchBundle {
     commitment: Element,
     children: [Element; PORTAL_NETWORK_NODE_WIDTH],
 }
 
-impl BranchHigher {
+impl BranchBundle {
     pub fn new(children: [Element; PORTAL_NETWORK_NODE_WIDTH]) -> Self {
         Self {
             commitment: children
@@ -39,7 +39,7 @@ impl BranchHigher {
     }
 }
 
-impl Default for BranchHigher {
+impl Default for BranchBundle {
     fn default() -> Self {
         Self::new(array::from_fn(|_| Element::zero()))
     }

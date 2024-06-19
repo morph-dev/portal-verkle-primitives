@@ -6,13 +6,13 @@ use crate::{
     types::TrieValue,
 };
 
-pub struct LeafLower {
+pub struct LeafFragment {
     parent_index: usize,
     commitment: Element,
     children: [Option<TrieValue>; PORTAL_NETWORK_NODE_WIDTH],
 }
 
-impl LeafLower {
+impl LeafFragment {
     pub fn new(parent_index: usize) -> Self {
         Self::new_with_children(parent_index, <_>::default())
     }
