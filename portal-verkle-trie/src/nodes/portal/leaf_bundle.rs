@@ -1,16 +1,16 @@
 use std::array;
 
-use alloy_primitives::U256;
-use banderwagon::{Element, Fr, One, PrimeField};
+use banderwagon::{Element, Fr, PrimeField};
 
 use crate::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
     msm::{DefaultMsm, MultiScalarMultiplicator},
+    nodes::leaf::LeafNode,
     types::Stem,
 };
 
-pub struct LeafBundle {
-    version: U256,
+pub struct LeafBundleNode {
+    marker: u64,
     stem: Stem,
     commitment: Element,
     c1: Element,
@@ -18,12 +18,7 @@ pub struct LeafBundle {
     children: [Element; PORTAL_NETWORK_NODE_WIDTH],
 }
 
-impl LeafBundle {
-    const EXTENSION_MARKER_INDEX: usize = 0;
-    const STEM_INDEX: usize = 1;
-    const C1_INDEX: usize = 2;
-    const C2_INDEX: usize = 3;
-
+impl LeafBundleNode {
     pub fn new(stem: Stem) -> Self {
         Self::new_with_childrent(stem, array::from_fn(|_| Element::zero()))
     }
@@ -42,18 +37,19 @@ impl LeafBundle {
             .cloned()
             .sum();
 
+        let marker = 1; // Extension marker
         let commitment = DefaultMsm.commit_sparse(&[
-            (Self::EXTENSION_MARKER_INDEX, Fr::one()), // Extension marker
+            (LeafNode::EXTENSION_MARKER_INDEX, Fr::from(marker)),
             (
-                Self::STEM_INDEX,
+                LeafNode::STEM_INDEX,
                 Fr::from_le_bytes_mod_order(stem.as_slice()),
             ),
-            (Self::C1_INDEX, c1.map_to_scalar_field()),
-            (Self::C2_INDEX, c2.map_to_scalar_field()),
+            (LeafNode::C1_INDEX, c1.map_to_scalar_field()),
+            (LeafNode::C2_INDEX, c2.map_to_scalar_field()),
         ]);
 
         Self {
-            version: U256::ZERO,
+            marker,
             stem,
             commitment,
             c1,
@@ -62,8 +58,8 @@ impl LeafBundle {
         }
     }
 
-    pub fn version(&self) -> &U256 {
-        &self.version
+    pub fn version(&self) -> u64 {
+        self.marker
     }
 
     pub fn stem(&self) -> &Stem {
@@ -83,10 +79,12 @@ impl LeafBundle {
         self.children[index] = child;
         if index < self.children.len() / 2 {
             self.c1 += diff;
-            self.commitment += DefaultMsm.scalar_mul(Self::C1_INDEX, self.c1.map_to_scalar_field());
+            self.commitment +=
+                DefaultMsm.scalar_mul(LeafNode::C1_INDEX, self.c1.map_to_scalar_field());
         } else {
             self.c2 += diff;
-            self.commitment += DefaultMsm.scalar_mul(Self::C2_INDEX, self.c2.map_to_scalar_field());
+            self.commitment +=
+                DefaultMsm.scalar_mul(LeafNode::C2_INDEX, self.c2.map_to_scalar_field());
         }
     }
 
