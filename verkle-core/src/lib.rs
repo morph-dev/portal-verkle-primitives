@@ -1,5 +1,6 @@
 pub mod constants;
 pub mod msm;
+pub mod serde;
 mod stem;
 mod trie_key;
 mod trie_value;

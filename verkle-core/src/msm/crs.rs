@@ -59,13 +59,13 @@ mod tests {
 
     #[test]
     fn first_point() -> anyhow::Result<()> {
-        assert_eq!(serialize_to_b256(CRS[0])?, B256::from_str(FIRST_POINT)?);
+        assert_eq!(serialize_to_b256(&CRS[0])?, B256::from_str(FIRST_POINT)?);
         Ok(())
     }
 
     #[test]
     fn last_point() -> anyhow::Result<()> {
-        assert_eq!(serialize_to_b256(CRS[255])?, B256::from_str(LAST_POINT)?);
+        assert_eq!(serialize_to_b256(&CRS[255])?, B256::from_str(LAST_POINT)?);
         Ok(())
     }
 

@@ -1,8 +1,22 @@
 use alloy_primitives::B256;
 use banderwagon::{Fr, PrimeField};
 use derive_more::{Constructor, Deref, From, Index};
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, PartialEq, Eq, Clone, Copy, Constructor, Index, Deref, From)]
+#[derive(
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Constructor,
+    Index,
+    Deref,
+    From,
+    Serialize,
+    Deserialize,
+)]
 pub struct TrieValue(B256);
 
 impl TrieValue {

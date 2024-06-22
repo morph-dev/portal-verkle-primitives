@@ -1,0 +1,267 @@
+{
+  "data": {
+    "message": {
+      "body": {
+        "attestations": [
+          {
+            "aggregation_bits": "0xffffff1f",
+            "data": {
+              "beacon_block_root": "0xd9dc37807eaee3c30ed0802d5782e39b0e22ff891873136f7ba4f2008cc808ec",
+              "index": "0",
+              "slot": "969",
+              "source": {
+                "epoch": "29",
+                "root": "0x53905f4065dc3d98ce7768463f347cf7071316cb368c3b0330abc406d8dfadb9"
+              },
+              "target": {
+                "epoch": "30",
+                "root": "0x93b7c9a552a70790f375cba778da6007944e76694fc59dfabf47f4ee679f1c45"
+              }
+            },
+            "signature": "0x8af83d534d2ecb39bf9e848e461c129bb47e41fb44fc74ce3b728952f72a7fccdc3c24e478d4276d795d605976e8372b0a0e153a99b4a7c573c8c9ced027ce0f8a98ac3395e5933c6e3d98eddc616a1da8a0e2e6eadab436267dfadcc42f6552"
+          },
+          {
+            "aggregation_bits": "0x10904c1d",
+            "data": {
+              "beacon_block_root": "0xd9dc37807eaee3c30ed0802d5782e39b0e22ff891873136f7ba4f2008cc808ec",
+              "index": "0",
+              "slot": "969",
+              "source": {
+                "epoch": "29",
+                "root": "0x53905f4065dc3d98ce7768463f347cf7071316cb368c3b0330abc406d8dfadb9"
+              },
+              "target": {
+                "epoch": "30",
+                "root": "0x93b7c9a552a70790f375cba778da6007944e76694fc59dfabf47f4ee679f1c45"
+              }
+            },
+            "signature": "0x91f31f1dd3e1388a3e2590e2e8da97bfdffa14a4d180cb59c8e8fa6923fe96e15331ffa4021ff96cd59d24fb3db0a92012c7823ea70592aa517a0694afaf6d5b328443eea44f87311b1f93e1e0f196be98db588f06470d8cbdf9df77668bf5d6"
+          }
+        ],
+        "attester_slashings": [],
+        "bls_to_execution_changes": [],
+        "deposits": [],
+        "eth1_data": {
+          "block_hash": "0x3fe165c03e7a77d1e3759362ebeeb16fd964cb411ce11fbe35c7032fab5b9a8a",
+          "deposit_count": "0",
+          "deposit_root": "0xd70a234731285c6804c2a4f56711ddb8c82c99740f207854891028af34e27e5e"
+        },
+        "execution_payload": {
+          "base_fee_per_gas": "7",
+          "block_hash": "0x8f1c126d97c6745d6ab5eaf7a114a5d05b1c3abb02628e3505be26c039bd4213",
+          "block_number": "968",
+          "execution_witness": {
+            "stateDiff": [
+              {
+                "stem": "0x242271cf1aaa13ede9bb0a1550d6f181c6135afb92be8270221f03cc8a721e",
+                "suffixDiffs": [
+                  {
+                    "currentValue": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "0"
+                  },
+                  {
+                    "currentValue": "0x8829a4276638e7cb000000000000000000000000000000000000000000000000",
+                    "newValue": "0x88a92ffba0689ccc000000000000000000000000000000000000000000000000",
+                    "suffix": "1"
+                  },
+                  {
+                    "currentValue": "0x923b000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "2"
+                  },
+                  {
+                    "currentValue": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                    "newValue": null,
+                    "suffix": "3"
+                  },
+                  {
+                    "currentValue": null,
+                    "newValue": null,
+                    "suffix": "4"
+                  }
+                ]
+              },
+              {
+                "stem": "0x8a82f53f686f422d639052f8cdf88743f57df6484fc674037990d640ec9c7f",
+                "suffixDiffs": [
+                  {
+                    "currentValue": null,
+                    "newValue": "0xf3f15f2e25e264bdd260f3feee8580a56254c014f00cdae105b5fdb332ce6deb",
+                    "suffix": "199"
+                  }
+                ]
+              },
+              {
+                "stem": "0x96ed99018bcdb2439b664559f70a95ec161cfc6ef2b8e1b42ff61733e87f8e",
+                "suffixDiffs": [
+                  {
+                    "currentValue": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "0"
+                  },
+                  {
+                    "currentValue": "0x9f9a13d7e77b3e18000000000000000000000000000000000000000000000000",
+                    "newValue": "0x9f3a28ba1aa23e18000000000000000000000000000000000000000000000000",
+                    "suffix": "1"
+                  },
+                  {
+                    "currentValue": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "2"
+                  },
+                  {
+                    "currentValue": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                    "newValue": null,
+                    "suffix": "3"
+                  },
+                  {
+                    "currentValue": null,
+                    "newValue": null,
+                    "suffix": "4"
+                  }
+                ]
+              },
+              {
+                "stem": "0xd5f60a22f578b01222216496e3322676c2bd1a27f4814fff924ff5795b9dae",
+                "suffixDiffs": [
+                  {
+                    "currentValue": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "0"
+                  },
+                  {
+                    "currentValue": "0x505c85d75311e6ef3a2e3b030000000000000000000000000000000000000000",
+                    "newValue": "0xe03f554dab8a7bee3a2e3b030000000000000000000000000000000000000000",
+                    "suffix": "1"
+                  },
+                  {
+                    "currentValue": "0x6202000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": "0x6402000000000000000000000000000000000000000000000000000000000000",
+                    "suffix": "2"
+                  },
+                  {
+                    "currentValue": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                    "newValue": null,
+                    "suffix": "3"
+                  },
+                  {
+                    "currentValue": null,
+                    "newValue": null,
+                    "suffix": "4"
+                  }
+                ]
+              },
+              {
+                "stem": "0xdf67dea9181141d6255ac05c7ada5a590fb30a375023f16c31223f067319e3",
+                "suffixDiffs": [
+                  {
+                    "currentValue": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "0"
+                  },
+                  {
+                    "currentValue": "0x34e3e379f97bd3cb000000000000000000000000000000000000000000000000",
+                    "newValue": "0x34636f4d34ac88cc000000000000000000000000000000000000000000000000",
+                    "suffix": "1"
+                  },
+                  {
+                    "currentValue": "0x923b000000000000000000000000000000000000000000000000000000000000",
+                    "newValue": null,
+                    "suffix": "2"
+                  },
+                  {
+                    "currentValue": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+                    "newValue": null,
+                    "suffix": "3"
+                  },
+                  {
+                    "currentValue": null,
+                    "newValue": null,
+                    "suffix": "4"
+                  }
+                ]
+              }
+            ],
+            "verkleProof": {
+              "commitmentsByPath": [
+                "0x4e770ac3bda6eebb9216823af04f89be50cb9cf88623f29cb790d9f45bed1e60",
+                "0x7323cd4e1524443f60ecc7a23fd215e371f55dc36d2020579138c23ec993ed61",
+                "0x64e803bc234dea132fb3fb0b729b3706a76379de1a80015d411c6a944c1e75f7",
+                "0x56bc0deba726ba16e14c4d0c31797677e9cd3fa423a59d9532d3bee0af8684cb",
+                "0x261c79bd215882e07f3b0737b3e9f6f5e06daeba881de5be991a61f29700d206",
+                "0x139b9d561c869dc65e551527ca9d5b802e93a74cb3c0e786e6224e7352b359cc",
+                "0x01c831d679e023f1d032cdc8c7ed13a3da303745ffc72789efa3eaa8170e0a44",
+                "0x6e8f12e78e333dd9779a26b00a220b9bc15814a96dcd694f34d0a9598619043a",
+                "0x23c73034418118cbb262c3b8959b13bb4a7e8dd2c259843c1f7b7b6d7471d34e",
+                "0x609c9bf5ee030b7eea7586ced93a495ceba50b0c692d8b51fd0189cbf41cf15d",
+                "0x28e14ecd2e36337873d79e75ceb8df35bc06f5a35cdb8634f552857e40ec5f21",
+                "0x39223f801d5ea18b0fd0b67005ee71849c87cf6b60156f2f022dea4d6abc0b2e",
+                "0x2126ba2de6f78443530ed8a7df105123e51cfc820ec9c8c78efa00bfbc6a06e7",
+                "0x46990464eb4b608262b4a1c381f331fc02d4fd922a3cb3e34a5553522155462d",
+                "0x0428fbea50cdbb6b460dc9a8ad008be3038f8ab7642b0bb917120ce410faf3fd",
+                "0x035ba34b35a80f43d73e83925f2d2be4f70b61f9d5e654f7cbb888034c09b0d9"
+              ],
+              "d": "0x38fc7c6e434900b949ca499cead40f2dbb2bf6b1a7b69941526dae333eddc42d",
+              "depthExtensionPresent": "0x121212121a",
+              "ipaProof": {
+                "cl": [
+                  "0x6aa94d2d50d71a6163e498ab3b0ebd16f238b18aa80bfe5c9f55cb49d370fa4e",
+                  "0x17bed3e4866ecea3ef6e218a8d637f8fa4d402c210a67c48cafc4fe31667ffb6",
+                  "0x507ecc3739561e307cb1b5420468a8759f51dc33964767c6056bab74ea6b5297",
+                  "0x2fcb7e34387dc010eb69c18106a3b27bae9cd6a85407f36d836c95f206840110",
+                  "0x630feb4af9e908f6a17af98fa0d4ddae2911de8da0f5a18988905b8d170f8e50",
+                  "0x0fec338722827b59f857947ea6378625c8992e95e7a5fa6b26e9e4bf73498f95",
+                  "0x287f6a2b52c4f06b2688acebc7d0e968cc2f83b1fc3f17ba806ea5700746e444",
+                  "0x66da47c2f3e0a26d46ddb19ac07c9e6ef89ab16ae662728aa69396260e5b44dc"
+                ],
+                "cr": [
+                  "0x71b3396cf7a5c217660c9a8f21274a7acc35fd82b44c0447d309c72d7de8f55e",
+                  "0x13517a9ca5bf5598d2121d3c29659d4c45c1dcb3b6ee88446a1dd01ca4325fab",
+                  "0x65da9be7ce9cfdcc301eed6920f6c1f834dd49636ca96568603a01d257c4a7ff",
+                  "0x3356c6ae5cffaf49098c65997b94a19337d8c1935ea85c3840bfebcf1431d4bc",
+                  "0x2b417289ffb1062b934457c5b40351bea917a0ea0c557a225f4a93ae9347c148",
+                  "0x15929571b2d08e2a131565f9e1c8a621a066f39fe38ec82cff8ac5b483262e89",
+                  "0x52d8ccdeb05b48786e38fb4b382937077cc99a39ce6b72d41666b1f13c22f09f",
+                  "0x2a8e08d3a01afb061fd87ff65ab2b45ef1b340d653430c45709824a71ba770f3"
+                ],
+                "finalEvaluation": "0x00532afcefe9ee364ae5f025dc92275410d2193f30c4df843c9629cd6eae01ef"
+              },
+              "otherStems": []
+            }
+          },
+          "extra_data": "0xd983010c01846765746889676f312e32302e3134856c696e7578",
+          "fee_recipient": "0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134",
+          "gas_limit": "30000000",
+          "gas_used": "42000",
+          "logs_bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "parent_hash": "0xf3f15f2e25e264bdd260f3feee8580a56254c014f00cdae105b5fdb332ce6deb",
+          "prev_randao": "0x1c9dbf6d2e8ac565ec20405c579048372c6739acebd9e6befa4d849c14aea49a",
+          "receipts_root": "0xd95b673818fa493deec414e01e610d97ee287c9421c8eff4102b1647c1a184e4",
+          "state_root": "0x5d45ce6aa3b35f651b10b9764aa7fc90724539304d0b471b74c9a3540cf85445",
+          "timestamp": "1712930100",
+          "transactions": [
+            "0xf86f820262843b9aca0782f618946177843db3138ae69679a54b95cf345ed759450d87b5303ad38b80008083021e7ca0c10ff9847de80bb2014e2c7a38b13061edbd58ac8cdf2928591eacb46835cfc3a0046d33966316f6fd6eaa2471f34783414ee0132fa85d3efc2076415561a6d469",
+            "0xf86f820263843b9aca0782f61894687704db07e902e9a8b3754031d168d46e3d586e87b5303ad38b80008083021e7ba0bbd9402edc5bf11c487d30519a35513d175f876cf2e68a803e2a1ee3374cc529a06a639483573f15bf5d9508887b5962ad5e829db9f608aa202255070ca55d95cc"
+          ],
+          "withdrawals": []
+        },
+        "graffiti": "0x6c6f6465737461722f6765746800000000000000000000000000000000000000",
+        "proposer_slashings": [],
+        "randao_reveal": "0xa0be0be66ffbe27cb1ddaafabf8e3005f95cf2a2a9644022ee3443b044e3e0ba725e9bf4721f3d652d0c075bd19dec340abdcf87443376cf528c17b4924020465283189d617b6708159088cc5224495d844f662f54a244e09bce3f502589c4c4",
+        "sync_aggregate": {
+          "sync_committee_bits": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "sync_committee_signature": "0xa67be1ae98d1a506ccca94d424d8c8d0393fa584176b0893376112b017139fe09a92dca32b2b66b31a8ffe99ae407d56096478c26143d95106500921f8c6d49140bf44d6201823b8686c4c675f4b485c5b5585588efeb13d4ba0e77ab22f8201"
+        },
+        "voluntary_exits": []
+      },
+      "parent_root": "0xd9dc37807eaee3c30ed0802d5782e39b0e22ff891873136f7ba4f2008cc808ec",
+      "proposer_index": "496",
+      "slot": "970",
+      "state_root": "0xb605a20a4cce23cd89614429148cf3651e81fd5a823a46bdfd418856a8b2a25f"
+    },
+    "signature": "0xb5207e3b172be1e771c7f4a16ebd7a639f01a7d0f8812fcb4b1f4776498440b6bc717ed1ebd4054c64c5d6f37eeaac8a045536d484ffb6cec949203f9564e1a4b601d41d189948c41c55eedb203e8d4eea29c70dea0b29b6465f96da38a37688"
+  },
+  "execution_optimistic": false,
+  "version": "electra"
+}
