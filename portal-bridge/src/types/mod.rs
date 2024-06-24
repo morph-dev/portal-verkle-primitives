@@ -3,11 +3,12 @@ use serde::{Deserialize, Serialize};
 use self::beacon::SignedBeaconBlock;
 
 pub mod beacon;
+pub mod genesis;
 pub mod witness;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JsonResponseMessage {
-    data: SignedBeaconBlock,
+    pub data: SignedBeaconBlock,
 }
 
 #[cfg(test)]

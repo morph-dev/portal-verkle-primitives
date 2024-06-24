@@ -1,7 +1,7 @@
-use std::{fs::File, io::BufWriter, path::PathBuf};
+use std::{fs::File, io::BufWriter};
 
 use clap::Parser;
-use portal_bridge::beacon_slot_path;
+use portal_bridge::paths::beacon_slot_path;
 use reqwest::{Client, Method, Url};
 
 const LOCALHOST_RPC_URL: &str = "http://localhost:9596/";
@@ -23,9 +23,6 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let client = Client::new();
-
-    let path = PathBuf::from("data");
-    dbg!(path.exists());
 
     for slot in 0..=args.slots {
         let path = beacon_slot_path(slot);

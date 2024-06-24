@@ -1,32 +1,32 @@
 use alloy_primitives::{Bytes, B256, U64};
 use serde::{Deserialize, Serialize};
 
-use super::witness::ExecutionWitness;
+use crate::types::witness::ExecutionWitness;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignedBeaconBlock {
-    message: BeaconBlock,
+    pub message: BeaconBlock,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BeaconBlock {
-    parent_root: B256,
-    state_root: B256,
-    body: BeaconBlockBody,
+    pub parent_root: B256,
+    pub state_root: B256,
+    pub body: BeaconBlockBody,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BeaconBlockBody {
-    execution_payload: ExecutionPayload,
+    pub execution_payload: ExecutionPayload,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecutionPayload {
-    block_number: U64,
-    block_hash: B256,
-    parent_hash: B256,
-    state_root: B256,
-    timestamp: U64,
-    transactions: Vec<Bytes>,
-    execution_witness: ExecutionWitness,
+    pub block_number: U64,
+    pub block_hash: B256,
+    pub parent_hash: B256,
+    pub state_root: B256,
+    pub timestamp: U64,
+    pub transactions: Vec<Bytes>,
+    pub execution_witness: ExecutionWitness,
 }
