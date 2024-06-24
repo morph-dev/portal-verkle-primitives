@@ -1,6 +1,6 @@
 use alloy_primitives::{bytes, wrap_fixed_bytes};
 
-use super::trie_key::TrieKey;
+use crate::TrieKey;
 
 wrap_fixed_bytes!(pub struct Stem<31>;);
 

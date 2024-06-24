@@ -1,13 +1,13 @@
 use std::array;
 
-use banderwagon::{Element, Fr, PrimeField, Zero};
+use banderwagon::{Element, Fr, PrimeField};
 use verkle_core::{
     constants::{
         EXTENSION_C1_INDEX, EXTENSION_C2_INDEX, EXTENSION_MARKER_INDEX, EXTENSION_STEM_INDEX,
         VERKLE_NODE_WIDTH,
     },
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    Stem, TrieValue,
+    Stem, TrieValue, TrieValueSplit,
 };
 
 pub struct LeafNode {
@@ -74,7 +74,7 @@ impl LeafNode {
         }
     }
 
-    pub fn version(&self) -> u64 {
+    pub fn marker(&self) -> u64 {
         self.marker
     }
 
@@ -92,23 +92,29 @@ impl LeafNode {
 
     pub fn set(&mut self, index: usize, child: TrieValue) {
         let (new_low_value, new_high_value) = child.split();
-        let (old_low_value, old_high_value) = self.children[index]
-            .replace(child)
-            .map_or_else(|| (Fr::zero(), Fr::zero()), |old_child| old_child.split());
+        let old_value = self.children[index].replace(child);
+        let (old_low_value, old_high_value) = old_value.split();
 
         let suffix_index = index % (VERKLE_NODE_WIDTH / 2);
-        let suffix_commitment_diff = DefaultMsm
-            .scalar_mul(2 * suffix_index, new_low_value - old_low_value)
-            + DefaultMsm.scalar_mul(2 * suffix_index + 1, new_high_value - old_high_value);
+        let suffix_commitment_diff = DefaultMsm.commit_sparse(&[
+            (2 * suffix_index, new_low_value - old_low_value),
+            (2 * suffix_index + 1, new_high_value - old_high_value),
+        ]);
 
         if index < VERKLE_NODE_WIDTH / 2 {
+            let old_c1_commitment_hash = self.c1.map_to_scalar_field();
             self.c1 += suffix_commitment_diff;
-            self.commitment +=
-                DefaultMsm.scalar_mul(EXTENSION_C1_INDEX, self.c1.map_to_scalar_field());
+            self.commitment += DefaultMsm.scalar_mul(
+                EXTENSION_C1_INDEX,
+                self.c1.map_to_scalar_field() - old_c1_commitment_hash,
+            );
         } else {
+            let old_c2_commitment_hash = self.c2.map_to_scalar_field();
             self.c2 += suffix_commitment_diff;
-            self.commitment +=
-                DefaultMsm.scalar_mul(EXTENSION_C2_INDEX, self.c2.map_to_scalar_field());
+            self.commitment += DefaultMsm.scalar_mul(
+                EXTENSION_C2_INDEX,
+                self.c2.map_to_scalar_field() - old_c2_commitment_hash,
+            );
         }
     }
 

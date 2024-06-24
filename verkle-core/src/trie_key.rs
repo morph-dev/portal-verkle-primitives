@@ -1,9 +1,25 @@
 use alloy_primitives::B256;
-use derive_more::{Constructor, Deref, From, Index};
+use derive_more::{Constructor, Deref, DerefMut, From, Index, IndexMut};
+use serde::{Deserialize, Serialize};
 
-use super::stem::Stem;
+use crate::Stem;
 
-#[derive(PartialEq, Eq, Clone, Copy, Constructor, Index, Deref, From)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Constructor,
+    Index,
+    IndexMut,
+    Deref,
+    DerefMut,
+    From,
+    Serialize,
+    Deserialize,
+)]
 pub struct TrieKey(B256);
 
 impl TrieKey {

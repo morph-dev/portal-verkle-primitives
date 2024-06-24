@@ -79,13 +79,19 @@ impl LeafBundleNode {
         let diff = child - self.children[index];
         self.children[index] = child;
         if index < self.children.len() / 2 {
+            let old_c1_commitment_hash = self.c1.map_to_scalar_field();
             self.c1 += diff;
-            self.commitment +=
-                DefaultMsm.scalar_mul(EXTENSION_C1_INDEX, self.c1.map_to_scalar_field());
+            self.commitment += DefaultMsm.scalar_mul(
+                EXTENSION_C1_INDEX,
+                self.c1.map_to_scalar_field() - old_c1_commitment_hash,
+            );
         } else {
+            let old_c2_commitment_hash = self.c2.map_to_scalar_field();
             self.c2 += diff;
-            self.commitment +=
-                DefaultMsm.scalar_mul(EXTENSION_C2_INDEX, self.c2.map_to_scalar_field());
+            self.commitment += DefaultMsm.scalar_mul(
+                EXTENSION_C2_INDEX,
+                self.c2.map_to_scalar_field() - old_c2_commitment_hash,
+            );
         }
     }
 

@@ -1,8 +1,8 @@
-use banderwagon::{Element, Fr, Zero};
+use banderwagon::Element;
 use verkle_core::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    TrieValue,
+    TrieValue, TrieValueSplit,
 };
 
 pub struct LeafFragmentNode {
@@ -51,15 +51,15 @@ impl LeafFragmentNode {
 
     pub fn set(&mut self, child_index: usize, child: TrieValue) {
         let (new_low_value, new_high_value) = child.split();
-        let (old_low_value, old_high_value) =
-            self.children[child_index].replace(child).map_or_else(
-                || (Fr::zero(), Fr::zero()),
-                |old_child_value| old_child_value.split(),
-            );
+        let old_value = self.children[child_index].replace(child);
+        let (old_low_value, old_high_value) = old_value.split();
 
         let (low_index, high_index) = Self::bases_indices(self.parent_index, child_index);
-        self.commitment += DefaultMsm.scalar_mul(low_index, new_low_value - old_low_value);
-        self.commitment += DefaultMsm.scalar_mul(high_index, new_high_value - old_high_value);
+
+        self.commitment += DefaultMsm.commit_sparse(&[
+            (low_index, new_low_value - old_low_value),
+            (high_index, new_high_value - old_high_value),
+        ]);
     }
 
     pub fn get(&self, index: usize) -> Option<&TrieValue> {

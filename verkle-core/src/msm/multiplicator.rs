@@ -1,9 +1,7 @@
 use banderwagon::{msm::MSMPrecompWnaf, Element, Fr, Zero};
 use once_cell::sync::Lazy;
 
-use crate::constants::VERKLE_NODE_WIDTH;
-
-use super::crs::CRS;
+use crate::{constants::VERKLE_NODE_WIDTH, msm::crs::CRS};
 
 static PRECOMP_WNAF_WINDOW_SIZE: usize = 12;
 
