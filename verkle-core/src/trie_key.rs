@@ -33,6 +33,10 @@ impl TrieKey {
         B256::len_bytes()
     }
 
+    pub fn has_stem(&self, stem: &Stem) -> bool {
+        self.starts_with(stem.as_slice())
+    }
+
     pub fn stem(&self) -> Stem {
         self.into()
     }
