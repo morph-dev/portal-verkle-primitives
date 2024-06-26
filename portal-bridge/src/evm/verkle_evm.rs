@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
-use alloy_primitives::{address, keccak256, B256, U256, U8};
-use verkle_core::{
-    constants::{BALANCE_LEAF_KEY, CODE_KECCAK_LEAF_KEY, NONCE_LEAF_KEY, VERSION_LEAF_KEY},
-    storage::AccountStorageLayout,
-    Stem, TrieKey, TrieValue,
-};
+use alloy_primitives::{address, keccak256, U256, U8};
+use verkle_core::{storage::AccountStorageLayout, Stem, TrieKey, TrieValue};
 
 use super::error::EvmError;
 use crate::{
@@ -64,15 +60,9 @@ impl VerkleEvm {
             );
 
             match &account_alloc.code {
-                None => insert_state_diff(
-                    storage_layout.code_hash_key(),
-                    TrieValue::new(keccak256([])),
-                ),
+                None => insert_state_diff(storage_layout.code_hash_key(), keccak256([]).into()),
                 Some(code) => {
-                    insert_state_diff(
-                        storage_layout.code_hash_key(),
-                        TrieValue::new(keccak256(code)),
-                    );
+                    insert_state_diff(storage_layout.code_hash_key(), keccak256(code).into());
                     insert_state_diff(
                         storage_layout.code_size_key(),
                         U256::from(code.len()).into(),
@@ -112,35 +102,14 @@ impl VerkleEvm {
             // NOTE: This is not included into execution_witness (probably a bug).
             let storage_layout =
                 AccountStorageLayout::new(address!("fffffffffffffffffffffffffffffffffffffffe"));
-            let base_storage_key = storage_layout.version_key();
-            let state_diff = StemStateDiff {
-                stem: base_storage_key.stem(),
-                suffix_diffs: vec![
-                    SuffixStateDiff {
-                        suffix: U8::from(VERSION_LEAF_KEY),
-                        current_value: None,
-                        new_value: Some(TrieValue::new(B256::ZERO)),
-                    },
-                    SuffixStateDiff {
-                        suffix: U8::from(BALANCE_LEAF_KEY),
-                        current_value: None,
-                        new_value: Some(TrieValue::new(B256::ZERO)),
-                    },
-                    SuffixStateDiff {
-                        suffix: U8::from(NONCE_LEAF_KEY),
-                        current_value: None,
-                        new_value: Some(TrieValue::new(B256::ZERO)),
-                    },
-                    SuffixStateDiff {
-                        suffix: U8::from(CODE_KECCAK_LEAF_KEY),
-                        current_value: None,
-                        new_value: Some(TrieValue::new(keccak256([]))),
-                    },
-                ],
-            };
             self.state
-                .update([state_diff].as_slice())
-                .map_err(EvmError::TrieError)?;
+                .insert(&storage_layout.version_key(), TrieValue::ZERO);
+            self.state
+                .insert(&storage_layout.balance_key(), TrieValue::ZERO);
+            self.state
+                .insert(&storage_layout.nonce_key(), TrieValue::ZERO);
+            self.state
+                .insert(&storage_layout.code_hash_key(), keccak256([]).into());
         }
 
         self.state

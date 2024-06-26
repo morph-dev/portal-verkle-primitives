@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn parse_all_beacon_slots() -> anyhow::Result<()> {
         for file in read_dir("../data/verkle-devnet-6/beacon")? {
-            let reader = BufReader::new(File::open(dbg!(file?.path()))?);
+            let reader = BufReader::new(File::open(file?.path())?);
             let _: JsonResponseMessage = serde_json::from_reader(reader)?;
         }
         Ok(())

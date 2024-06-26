@@ -1,23 +1,7 @@
-use alloy_primitives::{B256, U256};
+use alloy_primitives::{bytes, wrap_fixed_bytes, U256};
 use banderwagon::{Fr, PrimeField, Zero};
-use derive_more::{Constructor, Deref, From, Index};
-use serde::{Deserialize, Serialize};
 
-#[derive(
-    Default,
-    Debug,
-    PartialEq,
-    Eq,
-    Clone,
-    Copy,
-    Constructor,
-    Index,
-    Deref,
-    From,
-    Serialize,
-    Deserialize,
-)]
-pub struct TrieValue(B256);
+wrap_fixed_bytes!(pub struct TrieValue<32>;);
 
 impl From<U256> for TrieValue {
     fn from(value: U256) -> Self {

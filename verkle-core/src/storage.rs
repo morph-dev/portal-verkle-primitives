@@ -103,7 +103,7 @@ fn tree_key(address: &Address32, storage_pos: &U256) -> TrieKey {
     ];
     let hash_commitment = DefaultMsm.commit_lagrange(&scalars).map_to_scalar_field();
 
-    let mut key = TrieKey::new(B256::ZERO);
+    let mut key = TrieKey::ZERO;
     hash_commitment
         .serialize_compressed(key.as_mut_slice())
         .unwrap();

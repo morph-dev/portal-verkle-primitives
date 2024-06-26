@@ -1,6 +1,6 @@
 use alloy_primitives::B256;
 use banderwagon::Element;
-use verkle_core::utils::serialize_to_b256;
+use verkle_core::{utils::serialize_to_b256, TrieKey, TrieValue};
 
 use super::{error::VerkleTrieError, nodes::branch::BranchNode};
 use crate::types::witness::StemStateDiff;
@@ -29,6 +29,14 @@ impl VerkleTrie {
 
     pub fn root(&self) -> B256 {
         serialize_to_b256(&self.commitment()).unwrap()
+    }
+
+    pub fn get(&self, key: &TrieKey) -> Option<&TrieValue> {
+        self.root_node.get(key)
+    }
+
+    pub fn insert(&mut self, key: &TrieKey, value: TrieValue) {
+        self.root_node.insert(key, value)
     }
 
     pub fn update(&mut self, state_diffs: &[StemStateDiff]) -> Result<(), VerkleTrieError> {

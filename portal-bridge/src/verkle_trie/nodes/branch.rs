@@ -44,7 +44,7 @@ impl BranchNode {
             Node::Empty => None,
             Node::Branch(branch_node) => branch_node.get(key),
             Node::Leaf(leaf_node) => {
-                if key.has_stem(leaf_node.stem()) {
+                if key.starts_with_stem(leaf_node.stem()) {
                     leaf_node.get(key.suffix() as usize)
                 } else {
                     None
@@ -56,6 +56,7 @@ impl BranchNode {
     pub fn insert(&mut self, key: &TrieKey, value: TrieValue) {
         let index = key[self.depth] as usize;
         let child = &mut self.children[index];
+        let old_commitment_hash = child.commitment_hash();
         match child {
             Node::Empty => {
                 let mut leaf_node = Box::new(LeafNode::new(key.stem()));
@@ -78,6 +79,8 @@ impl BranchNode {
                 }
             }
         }
+        self.commitment +=
+            DefaultMsm.scalar_mul(index, child.commitment_hash() - old_commitment_hash);
     }
 
     pub fn get_child(&self, index: usize) -> &Node {

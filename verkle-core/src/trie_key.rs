@@ -1,39 +1,17 @@
-use alloy_primitives::B256;
-use derive_more::{Constructor, Deref, DerefMut, From, Index, IndexMut};
-use serde::{Deserialize, Serialize};
+use alloy_primitives::{bytes, wrap_fixed_bytes};
 
 use crate::Stem;
 
-#[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    Clone,
-    Copy,
-    Constructor,
-    Index,
-    IndexMut,
-    Deref,
-    DerefMut,
-    From,
-    Serialize,
-    Deserialize,
-)]
-pub struct TrieKey(B256);
+wrap_fixed_bytes!(pub struct TrieKey<32>;);
 
 impl TrieKey {
     pub fn from_stem_and_last_byte(stem: &Stem, suffix: u8) -> Self {
-        let mut key = B256::right_padding_from(stem.as_slice());
-        key[B256::len_bytes() - 1] = suffix;
-        key.into()
+        let mut key = Self::right_padding_from(stem.as_slice());
+        key[Self::len_bytes() - 1] = suffix;
+        key
     }
 
-    pub fn len_bytes() -> usize {
-        B256::len_bytes()
-    }
-
-    pub fn has_stem(&self, stem: &Stem) -> bool {
+    pub fn starts_with_stem(&self, stem: &Stem) -> bool {
         self.starts_with(stem.as_slice())
     }
 
