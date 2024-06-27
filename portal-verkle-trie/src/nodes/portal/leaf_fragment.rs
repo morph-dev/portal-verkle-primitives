@@ -1,13 +1,12 @@
-use banderwagon::Element;
 use verkle_core::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    TrieValue, TrieValueSplit,
+    Point, TrieValue, TrieValueSplit,
 };
 
 pub struct LeafFragmentNode {
     parent_index: usize,
-    commitment: Element,
+    commitment: Point,
     children: [Option<TrieValue>; PORTAL_NETWORK_NODE_WIDTH],
 }
 
@@ -45,8 +44,8 @@ impl LeafFragmentNode {
         }
     }
 
-    pub fn commitment(&self) -> Element {
-        self.commitment
+    pub fn commitment(&self) -> &Point {
+        &self.commitment
     }
 
     pub fn set(&mut self, child_index: usize, child: TrieValue) {

@@ -1,37 +1,35 @@
 use std::ops::{Add, AddAssign};
 
-use ark_ff::Zero;
-use banderwagon::{Element, Fr};
+use verkle_core::{Point, ScalarField};
 
 pub struct Commitment {
-    commitment: Element,
-    commitment_hash: Option<Fr>,
+    commitment: Point,
+    commitment_hash: Option<ScalarField>,
 }
 
 impl Commitment {
-    pub fn new(commitment: Element) -> Self {
+    pub fn new(commitment: Point) -> Self {
         Self {
             commitment,
             commitment_hash: None,
         }
     }
 
-    pub fn commitment(&self) -> &Element {
+    pub fn commitment(&self) -> &Point {
         &self.commitment
     }
 
-    pub fn commitment_hash(&mut self) -> &Fr {
+    pub fn commitment_hash(&mut self) -> ScalarField {
         self.commitment_hash
             .get_or_insert_with(|| self.commitment.map_to_scalar_field())
-    }
-}
-
-impl Zero for Commitment {
-    fn zero() -> Self {
-        Self::new(Element::zero())
+            .clone()
     }
 
-    fn is_zero(&self) -> bool {
+    pub fn zero() -> Self {
+        Self::new(Point::zero())
+    }
+
+    pub fn is_zero(&self) -> bool {
         self.commitment.is_zero()
     }
 }
@@ -44,8 +42,8 @@ impl Add for Commitment {
     }
 }
 
-impl AddAssign<Element> for Commitment {
-    fn add_assign(&mut self, rhs: Element) {
+impl AddAssign<Point> for Commitment {
+    fn add_assign(&mut self, rhs: Point) {
         self.commitment += rhs;
         self.commitment_hash = None;
     }

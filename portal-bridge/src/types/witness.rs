@@ -1,8 +1,7 @@
 use alloy_primitives::{Bytes, U8};
-use banderwagon::{Element, Fr};
 use serde::{Deserialize, Serialize};
 use serde_nested_with::serde_nested;
-use verkle_core::{Stem, TrieValue};
+use verkle_core::{constants::VERKLE_NODE_WIDTH_BITS, Point, ScalarField, Stem, TrieValue};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -40,10 +39,8 @@ pub struct VerkleProof {
     #[serde(alias = "depthExtensionPresent")]
     pub depth_extension_present: Bytes,
     #[serde(alias = "commitmentsByPath")]
-    #[serde_nested(sub = "Element", serde(with = "verkle_core::serde::element"))]
-    pub commitments_by_path: Vec<Element>,
-    #[serde(with = "verkle_core::serde::element")]
-    pub d: Element,
+    pub commitments_by_path: Vec<Point>,
+    pub d: Point,
     #[serde(alias = "ipaProof")]
     pub ipa_proof: IpaProof,
 }
@@ -52,11 +49,8 @@ pub struct VerkleProof {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IpaProof {
-    #[serde_nested(sub = "Element", serde(with = "verkle_core::serde::element"))]
-    pub cl: Vec<Element>,
-    #[serde_nested(sub = "Element", serde(with = "verkle_core::serde::element"))]
-    pub cr: Vec<Element>,
+    pub cl: [Point; VERKLE_NODE_WIDTH_BITS],
+    pub cr: [Point; VERKLE_NODE_WIDTH_BITS],
     #[serde(alias = "finalEvaluation")]
-    #[serde(with = "verkle_core::serde::fr")]
-    pub final_evaluation: Fr,
+    pub final_evaluation: ScalarField,
 }

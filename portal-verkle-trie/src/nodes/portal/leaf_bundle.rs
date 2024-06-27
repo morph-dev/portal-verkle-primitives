@@ -1,50 +1,46 @@
 use std::array;
 
-use banderwagon::{Element, Fr, PrimeField};
 use verkle_core::{
     constants::{
         EXTENSION_C1_INDEX, EXTENSION_C2_INDEX, EXTENSION_MARKER_INDEX, EXTENSION_STEM_INDEX,
         PORTAL_NETWORK_NODE_WIDTH,
     },
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    Stem,
+    Point, ScalarField, Stem,
 };
 
 pub struct LeafBundleNode {
     marker: u64,
     stem: Stem,
-    commitment: Element,
-    c1: Element,
-    c2: Element,
-    children: [Element; PORTAL_NETWORK_NODE_WIDTH],
+    commitment: Point,
+    c1: Point,
+    c2: Point,
+    children: [Point; PORTAL_NETWORK_NODE_WIDTH],
 }
 
 impl LeafBundleNode {
     pub fn new(stem: Stem) -> Self {
-        Self::new_with_childrent(stem, array::from_fn(|_| Element::zero()))
+        Self::new_with_childrent(stem, array::from_fn(|_| Point::zero()))
     }
 
-    pub fn new_with_childrent(stem: Stem, children: [Element; PORTAL_NETWORK_NODE_WIDTH]) -> Self {
+    pub fn new_with_childrent(stem: Stem, children: [Point; PORTAL_NETWORK_NODE_WIDTH]) -> Self {
         let (first_half, second_half) = children.split_at(PORTAL_NETWORK_NODE_WIDTH / 2);
 
-        let c1: Element = first_half
+        let c1 = first_half
             .iter()
             .filter(|child| !child.is_zero())
             .cloned()
-            .sum();
-        let c2: Element = second_half
+            .sum::<Point>();
+        let c2 = second_half
             .iter()
             .filter(|child| !child.is_zero())
             .cloned()
-            .sum();
+            .sum::<Point>();
 
         let marker = 1; // Extension marker
         let commitment = DefaultMsm.commit_sparse(&[
-            (EXTENSION_MARKER_INDEX, Fr::from(marker)),
-            (
-                EXTENSION_STEM_INDEX,
-                Fr::from_le_bytes_mod_order(stem.as_slice()),
-            ),
+            (EXTENSION_MARKER_INDEX, ScalarField::from(marker)),
+            (EXTENSION_STEM_INDEX, ScalarField::from(&stem)),
             (EXTENSION_C1_INDEX, c1.map_to_scalar_field()),
             (EXTENSION_C2_INDEX, c2.map_to_scalar_field()),
         ]);
@@ -67,16 +63,16 @@ impl LeafBundleNode {
         &self.stem
     }
 
-    pub fn commitment(&self) -> Element {
-        self.commitment
+    pub fn commitment(&self) -> &Point {
+        &self.commitment
     }
 
-    pub fn commitment_hash(&self) -> Fr {
+    pub fn commitment_hash(&self) -> ScalarField {
         self.commitment.map_to_scalar_field()
     }
 
-    pub fn set(&mut self, index: usize, child: Element) {
-        let diff = child - self.children[index];
+    pub fn set(&mut self, index: usize, child: Point) {
+        let diff = child.clone() - &self.children[index];
         self.children[index] = child;
         if index < self.children.len() / 2 {
             let old_c1_commitment_hash = self.c1.map_to_scalar_field();
@@ -95,7 +91,7 @@ impl LeafBundleNode {
         }
     }
 
-    pub fn get(&self, index: usize) -> &Element {
+    pub fn get(&self, index: usize) -> &Point {
         &self.children[index]
     }
 }

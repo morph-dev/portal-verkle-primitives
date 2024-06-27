@@ -5,7 +5,7 @@ use crate::Stem;
 wrap_fixed_bytes!(pub struct TrieKey<32>;);
 
 impl TrieKey {
-    pub fn from_stem_and_last_byte(stem: &Stem, suffix: u8) -> Self {
+    pub fn from_stem_and_suffix(stem: &Stem, suffix: u8) -> Self {
         let mut key = Self::right_padding_from(stem.as_slice());
         key[Self::len_bytes() - 1] = suffix;
         key
@@ -20,6 +20,14 @@ impl TrieKey {
     }
 
     pub fn suffix(&self) -> u8 {
-        self[self.len() - 1]
+        self[Self::suffix_index()]
+    }
+
+    pub fn set_suffix(&mut self, suffix: u8) {
+        self[Self::suffix_index()] = suffix
+    }
+
+    fn suffix_index() -> usize {
+        Self::len_bytes() - 1
     }
 }

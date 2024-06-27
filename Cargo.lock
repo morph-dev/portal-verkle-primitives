@@ -1624,11 +1624,6 @@ version = "0.1.0"
 dependencies = [
  "alloy-primitives",
  "anyhow",
- "ark-ec",
- "ark-ed-on-bls12-381-bandersnatch",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "banderwagon",
  "clap",
  "reqwest",
  "serde",
@@ -1644,11 +1639,6 @@ name = "portal-verkle-trie"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
- "ark-ec",
- "ark-ed-on-bls12-381-bandersnatch",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "banderwagon",
  "derive_more",
  "ethereum_ssz",
  "ethereum_ssz_derive",

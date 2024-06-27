@@ -1,11 +1,9 @@
 use std::{array, mem};
 
-use ark_ff::Zero;
-use banderwagon::{Element, Fr};
 use verkle_core::{
     constants::VERKLE_NODE_WIDTH,
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    Stem, TrieKey, TrieValue,
+    Point, ScalarField, Stem, TrieKey, TrieValue,
 };
 
 use crate::{types::witness::StemStateDiff, verkle_trie::error::VerkleTrieError};
@@ -30,11 +28,11 @@ impl BranchNode {
         }
     }
 
-    pub fn commitment(&self) -> &Element {
+    pub fn commitment(&self) -> &Point {
         self.commitment.commitment()
     }
 
-    pub fn commitment_hash(&mut self) -> &Fr {
+    pub fn commitment_hash(&mut self) -> ScalarField {
         self.commitment.commitment_hash()
     }
 

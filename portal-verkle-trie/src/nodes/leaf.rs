@@ -1,21 +1,20 @@
 use std::array;
 
-use banderwagon::{Element, Fr, PrimeField};
 use verkle_core::{
     constants::{
         EXTENSION_C1_INDEX, EXTENSION_C2_INDEX, EXTENSION_MARKER_INDEX, EXTENSION_STEM_INDEX,
         VERKLE_NODE_WIDTH,
     },
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    Stem, TrieValue, TrieValueSplit,
+    Point, ScalarField, Stem, TrieValue, TrieValueSplit,
 };
 
 pub struct LeafNode {
     marker: u64,
     stem: Stem,
-    commitment: Element,
-    c1: Element,
-    c2: Element,
+    commitment: Point,
+    c1: Point,
+    c2: Point,
     children: [Option<TrieValue>; VERKLE_NODE_WIDTH],
 }
 
@@ -55,10 +54,10 @@ impl LeafNode {
 
         let marker = 1; // Extension marker
         let commitment = DefaultMsm.commit_sparse(&[
-            (EXTENSION_MARKER_INDEX, Fr::from(marker)),
+            (EXTENSION_MARKER_INDEX, ScalarField::from(marker)),
             (
                 EXTENSION_STEM_INDEX,
-                Fr::from_le_bytes_mod_order(stem.as_slice()),
+                ScalarField::from_le_bytes_mod_order(stem.as_slice()),
             ),
             (EXTENSION_C1_INDEX, c1.map_to_scalar_field()),
             (EXTENSION_C2_INDEX, c2.map_to_scalar_field()),
@@ -82,11 +81,11 @@ impl LeafNode {
         &self.stem
     }
 
-    pub fn commitment(&self) -> Element {
-        self.commitment
+    pub fn commitment(&self) -> &Point {
+        &self.commitment
     }
 
-    pub fn commitment_hash(&self) -> Fr {
+    pub fn commitment_hash(&self) -> ScalarField {
         self.commitment.map_to_scalar_field()
     }
 

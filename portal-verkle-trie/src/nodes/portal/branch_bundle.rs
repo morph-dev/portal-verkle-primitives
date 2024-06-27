@@ -1,15 +1,14 @@
 use std::array;
 
-use banderwagon::{Element, Fr};
-use verkle_core::constants::PORTAL_NETWORK_NODE_WIDTH;
+use verkle_core::{constants::PORTAL_NETWORK_NODE_WIDTH, Point, ScalarField};
 
 pub struct BranchBundleNode {
-    commitment: Element,
-    children: [Element; PORTAL_NETWORK_NODE_WIDTH],
+    commitment: Point,
+    children: [Point; PORTAL_NETWORK_NODE_WIDTH],
 }
 
 impl BranchBundleNode {
-    pub fn new(children: [Element; PORTAL_NETWORK_NODE_WIDTH]) -> Self {
+    pub fn new(children: [Point; PORTAL_NETWORK_NODE_WIDTH]) -> Self {
         Self {
             commitment: children
                 .iter()
@@ -20,26 +19,26 @@ impl BranchBundleNode {
         }
     }
 
-    pub fn commitment(&self) -> Element {
-        self.commitment
+    pub fn commitment(&self) -> &Point {
+        &self.commitment
     }
 
-    pub fn commitment_hash(&self) -> Fr {
+    pub fn commitment_hash(&self) -> ScalarField {
         self.commitment.map_to_scalar_field()
     }
 
-    pub fn set(&mut self, index: usize, child: Element) {
-        self.commitment += child - self.children[index];
+    pub fn set(&mut self, index: usize, child: Point) {
+        self.commitment += child.clone() - &self.children[index];
         self.children[index] = child;
     }
 
-    pub fn get(&self, index: usize) -> &Element {
+    pub fn get(&self, index: usize) -> &Point {
         &self.children[index]
     }
 }
 
 impl Default for BranchBundleNode {
     fn default() -> Self {
-        Self::new(array::from_fn(|_| Element::zero()))
+        Self::new(array::from_fn(|_| Point::zero()))
     }
 }

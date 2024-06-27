@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use alloy_primitives::hex::{encode, encode_prefixed};
-use verkle_core::{constants::VERKLE_NODE_WIDTH, utils::serialize_to_b256};
+use verkle_core::constants::VERKLE_NODE_WIDTH;
 
 use super::{
     nodes::{branch::BranchNode, leaf::LeafNode, Node},
@@ -81,9 +81,9 @@ impl TriePrinter for BranchNode {
             }
             writeln!(
                 writer,
-                "{:identation$}{index:02x} - {}",
+                "{:identation$}{index:02x} - {:?}",
                 "",
-                serialize_to_b256(&child.commitment())?
+                child.commitment()
             )?;
             child.print_trie_with_identation(writer, identation + 2)?;
         }
@@ -113,12 +113,7 @@ impl TriePrinter for LeafNode {
     ) -> anyhow::Result<()> {
         writeln!(writer, "{:identation$}stem - {}", "", self.stem())?;
 
-        writeln!(
-            writer,
-            "{:identation$}C1 - {}",
-            "",
-            serialize_to_b256(self.c1.commitment())?
-        )?;
+        writeln!(writer, "{:identation$}C1 - {:?}", "", self.c1.commitment())?;
         for index in 0..(VERKLE_NODE_WIDTH / 2) {
             if let Some(value) = self.get(index) {
                 writeln!(
@@ -131,12 +126,7 @@ impl TriePrinter for LeafNode {
             }
         }
 
-        writeln!(
-            writer,
-            "{:identation$}C2 - {}",
-            "",
-            serialize_to_b256(self.c2.commitment())?
-        )?;
+        writeln!(writer, "{:identation$}C2 - {:?}", "", self.c2.commitment())?;
         for index in (VERKLE_NODE_WIDTH / 2)..VERKLE_NODE_WIDTH {
             if let Some(value) = self.get(index) {
                 writeln!(

@@ -1,5 +1,4 @@
 use alloy_primitives::{Address, B256, U256};
-use banderwagon::{CanonicalSerialize, Fr, PrimeField};
 
 use crate::{
     constants::{
@@ -8,7 +7,7 @@ use crate::{
         VERSION_LEAF_KEY,
     },
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    Stem, TrieKey, TrieValue,
+    ScalarField, Stem, TrieKey, TrieValue,
 };
 
 type Address32 = B256;
@@ -28,23 +27,23 @@ impl AccountStorageLayout {
     }
 
     pub fn version_key(&self) -> TrieKey {
-        TrieKey::from_stem_and_last_byte(&self.base_storage_stem, VERSION_LEAF_KEY)
+        TrieKey::from_stem_and_suffix(&self.base_storage_stem, VERSION_LEAF_KEY)
     }
 
     pub fn balance_key(&self) -> TrieKey {
-        TrieKey::from_stem_and_last_byte(&self.base_storage_stem, BALANCE_LEAF_KEY)
+        TrieKey::from_stem_and_suffix(&self.base_storage_stem, BALANCE_LEAF_KEY)
     }
 
     pub fn nonce_key(&self) -> TrieKey {
-        TrieKey::from_stem_and_last_byte(&self.base_storage_stem, NONCE_LEAF_KEY)
+        TrieKey::from_stem_and_suffix(&self.base_storage_stem, NONCE_LEAF_KEY)
     }
 
     pub fn code_hash_key(&self) -> TrieKey {
-        TrieKey::from_stem_and_last_byte(&self.base_storage_stem, CODE_KECCAK_LEAF_KEY)
+        TrieKey::from_stem_and_suffix(&self.base_storage_stem, CODE_KECCAK_LEAF_KEY)
     }
 
     pub fn code_size_key(&self) -> TrieKey {
-        TrieKey::from_stem_and_last_byte(&self.base_storage_stem, CODE_SIZE_LEAF_KEY)
+        TrieKey::from_stem_and_suffix(&self.base_storage_stem, CODE_SIZE_LEAF_KEY)
     }
 
     pub fn storage_slot_key(&self, storage_key: U256) -> TrieKey {
@@ -90,23 +89,26 @@ impl AccountStorageLayout {
 
 fn tree_key(address: &Address32, storage_pos: &U256) -> TrieKey {
     let tree_index = storage_pos / VERKLE_NODE_WIDTH_U256;
-    let sub_index = (storage_pos % VERKLE_NODE_WIDTH_U256).byte(0);
+    let key_suffix = (storage_pos % VERKLE_NODE_WIDTH_U256).byte(0);
 
     let tree_index_bytes = tree_index.to_le_bytes::<32>();
 
     let scalars = [
-        Fr::from(2u128 + 256 * 64),
-        Fr::from_le_bytes_mod_order(&address[..16]),
-        Fr::from_le_bytes_mod_order(&address[16..]),
-        Fr::from_le_bytes_mod_order(&tree_index_bytes[..16]),
-        Fr::from_le_bytes_mod_order(&tree_index_bytes[16..]),
+        (0, ScalarField::from(2u64 + 256 * 64)),
+        (1, ScalarField::from_le_bytes_mod_order(&address[..16])),
+        (2, ScalarField::from_le_bytes_mod_order(&address[16..])),
+        (
+            3,
+            ScalarField::from_le_bytes_mod_order(&tree_index_bytes[..16]),
+        ),
+        (
+            4,
+            ScalarField::from_le_bytes_mod_order(&tree_index_bytes[16..]),
+        ),
     ];
-    let hash_commitment = DefaultMsm.commit_lagrange(&scalars).map_to_scalar_field();
+    let hash_commitment = DefaultMsm.commit_sparse(&scalars).map_to_scalar_field();
 
-    let mut key = TrieKey::ZERO;
-    hash_commitment
-        .serialize_compressed(key.as_mut_slice())
-        .unwrap();
-    key[31] = sub_index;
+    let mut key = TrieKey::from(hash_commitment.to_be_bytes());
+    key.set_suffix(key_suffix);
     key
 }

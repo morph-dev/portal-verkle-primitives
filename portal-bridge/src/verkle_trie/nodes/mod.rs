@@ -1,7 +1,6 @@
-use ark_ff::Zero;
-use banderwagon::{Element, Fr};
 use branch::BranchNode;
 use leaf::LeafNode;
+use verkle_core::{Point, ScalarField};
 
 pub mod branch;
 pub mod commitment;
@@ -14,19 +13,19 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn commitment(&self) -> Element {
+    pub fn commitment(&self) -> Point {
         match self {
-            Node::Empty => Element::zero(),
-            Node::Branch(branch_node) => *branch_node.commitment(),
-            Node::Leaf(leaf_node) => *leaf_node.commitment(),
+            Node::Empty => Point::zero(),
+            Node::Branch(branch_node) => branch_node.commitment().clone(),
+            Node::Leaf(leaf_node) => leaf_node.commitment().clone(),
         }
     }
 
-    pub fn commitment_hash(&mut self) -> Fr {
+    pub fn commitment_hash(&mut self) -> ScalarField {
         match self {
-            Node::Empty => Fr::zero(),
-            Node::Branch(branch_node) => *branch_node.commitment_hash(),
-            Node::Leaf(leaf_node) => *leaf_node.commitment_hash(),
+            Node::Empty => ScalarField::zero(),
+            Node::Branch(branch_node) => branch_node.commitment_hash(),
+            Node::Leaf(leaf_node) => leaf_node.commitment_hash(),
         }
     }
 

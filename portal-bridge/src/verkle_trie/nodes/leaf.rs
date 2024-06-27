@@ -1,14 +1,12 @@
 use std::array;
 
-use ark_ff::Zero;
-use banderwagon::{Element, Fr, PrimeField};
 use verkle_core::{
     constants::{
         EXTENSION_C1_INDEX, EXTENSION_C2_INDEX, EXTENSION_MARKER_INDEX, EXTENSION_STEM_INDEX,
         VERKLE_NODE_WIDTH,
     },
     msm::{DefaultMsm, MultiScalarMultiplicator},
-    Stem, TrieValue, TrieValueSplit,
+    Point, ScalarField, Stem, TrieValue, TrieValueSplit,
 };
 
 use crate::{types::witness::StemStateDiff, verkle_trie::error::VerkleTrieError};
@@ -29,11 +27,8 @@ impl LeafNode {
         let marker = 1;
 
         let commitment = DefaultMsm.commit_sparse(&[
-            (EXTENSION_MARKER_INDEX, Fr::from(marker)),
-            (
-                EXTENSION_STEM_INDEX,
-                Fr::from_le_bytes_mod_order(stem.as_slice()),
-            ),
+            (EXTENSION_MARKER_INDEX, ScalarField::from(marker)),
+            (EXTENSION_STEM_INDEX, ScalarField::from(&stem)),
         ]);
 
         Self {
@@ -54,11 +49,11 @@ impl LeafNode {
         &self.stem
     }
 
-    pub fn commitment(&self) -> &Element {
+    pub fn commitment(&self) -> &Point {
         self.commitment.commitment()
     }
 
-    pub fn commitment_hash(&mut self) -> &Fr {
+    pub fn commitment_hash(&mut self) -> ScalarField {
         self.commitment.commitment_hash()
     }
 
@@ -77,18 +72,18 @@ impl LeafNode {
             + DefaultMsm.scalar_mul(2 * suffix_index + 1, new_high_value - old_high_value);
 
         if index < VERKLE_NODE_WIDTH / 2 {
-            let old_c1_commitment_hash = *self.c1.commitment_hash();
+            let old_c1_commitment_hash = self.c1.commitment_hash();
             self.c1 += suffix_commitment_diff;
             self.commitment += DefaultMsm.scalar_mul(
                 EXTENSION_C1_INDEX,
-                *self.c1.commitment_hash() - old_c1_commitment_hash,
+                self.c1.commitment_hash() - old_c1_commitment_hash,
             );
         } else {
-            let old_c2_commitment_hash = *self.c2.commitment_hash();
+            let old_c2_commitment_hash = self.c2.commitment_hash();
             self.c2 += suffix_commitment_diff;
             self.commitment += DefaultMsm.scalar_mul(
                 EXTENSION_C2_INDEX,
-                *self.c2.commitment_hash() - old_c2_commitment_hash,
+                self.c2.commitment_hash() - old_c2_commitment_hash,
             );
         }
     }
@@ -100,8 +95,8 @@ impl LeafNode {
                 actual: state_diff.stem,
             });
         }
-        let old_c1_commitment_hash = *self.c1.commitment_hash();
-        let old_c2_commitment_hash = *self.c2.commitment_hash();
+        let old_c1_commitment_hash = self.c1.commitment_hash();
+        let old_c2_commitment_hash = self.c2.commitment_hash();
         for diff in state_diff.suffix_diffs.iter() {
             let index = diff.suffix.byte(0) as usize;
             let old_value = diff.current_value;
@@ -134,11 +129,11 @@ impl LeafNode {
         }
         self.commitment += DefaultMsm.scalar_mul(
             EXTENSION_C1_INDEX,
-            self.c1.commitment_hash() - &old_c1_commitment_hash,
+            self.c1.commitment_hash() - old_c1_commitment_hash,
         );
         self.commitment += DefaultMsm.scalar_mul(
             EXTENSION_C2_INDEX,
-            self.c2.commitment_hash() - &old_c2_commitment_hash,
+            self.c2.commitment_hash() - old_c2_commitment_hash,
         );
         Ok(())
     }

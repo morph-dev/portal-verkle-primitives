@@ -8,11 +8,6 @@ keywords = ["ethereum", "portal-network", "verkle"]
 
 [dependencies]
 alloy-primitives = { version = "0.7", features = ["serde", "ssz", "rand"] }
-ark-ec = "0.4"
-ark-ed-on-bls12-381-bandersnatch = "0.4"
-ark-ff = "0.4"
-ark-serialize = "0.4"
-banderwagon = { git = "https://github.com/crate-crypto/rust-verkle.git", rev = "442174edeb69f7827047132306d302345df12b83", version = "0.1" }
 derive_more = "0.99"
 ethereum_ssz = "0.5"
 ethereum_ssz_derive = "0.5"

@@ -1,9 +1,10 @@
-use banderwagon::Element;
+use std::array;
+
 use derive_more::{AsRef, Deref, Index};
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 
-use crate::constants::VERKLE_NODE_WIDTH;
+use crate::{constants::VERKLE_NODE_WIDTH, Point};
 
 const PEDERSEN_SEED: &[u8] = b"eth_verkle_oct_2021";
 
@@ -11,12 +12,12 @@ const PEDERSEN_SEED: &[u8] = b"eth_verkle_oct_2021";
 pub static CRS: Lazy<Bases> = Lazy::new(Bases::new);
 
 #[derive(AsRef, Deref, Index)]
-pub struct Bases([Element; VERKLE_NODE_WIDTH]);
+pub struct Bases([Point; VERKLE_NODE_WIDTH]);
 
 impl Bases {
     fn new() -> Self {
         let mut generated_elements = 0;
-        let mut elements = [Element::zero(); VERKLE_NODE_WIDTH];
+        let mut elements: [Point; VERKLE_NODE_WIDTH] = array::from_fn(|_| Point::zero());
 
         for i in 0u64.. {
             if generated_elements == elements.len() {
@@ -28,7 +29,7 @@ impl Bases {
                 .finalize();
 
             if let Some(p) = banderwagon::try_reduce_to_element(&hash) {
-                elements[generated_elements] = p;
+                elements[generated_elements] = Point::new(p);
                 generated_elements += 1;
             }
         }
@@ -43,9 +44,6 @@ mod tests {
 
     use alloy_primitives::B256;
     use ark_serialize::Valid;
-    use banderwagon::CanonicalSerialize;
-
-    use crate::utils::serialize_to_b256;
 
     use super::*;
 
@@ -59,13 +57,13 @@ mod tests {
 
     #[test]
     fn first_point() -> anyhow::Result<()> {
-        assert_eq!(serialize_to_b256(&CRS[0])?, B256::from_str(FIRST_POINT)?);
+        assert_eq!(B256::from(&CRS[0]), B256::from_str(FIRST_POINT)?);
         Ok(())
     }
 
     #[test]
     fn last_point() -> anyhow::Result<()> {
-        assert_eq!(serialize_to_b256(&CRS[255])?, B256::from_str(LAST_POINT)?);
+        assert_eq!(B256::from(&CRS[255]), B256::from_str(LAST_POINT)?);
         Ok(())
     }
 
@@ -73,7 +71,7 @@ mod tests {
     fn all_points_hash() -> anyhow::Result<()> {
         let mut hasher = Sha256::new();
         for p in CRS.iter() {
-            p.serialize_compressed(&mut hasher)?;
+            hasher.update(B256::from(p));
         }
 
         assert_eq!(
