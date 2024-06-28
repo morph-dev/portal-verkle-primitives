@@ -1,9 +1,9 @@
 use alloy_primitives::{Bytes, U8};
 use serde::{Deserialize, Serialize};
 use serde_nested_with::serde_nested;
-use verkle_core::{constants::VERKLE_NODE_WIDTH_BITS, Point, ScalarField, Stem, TrieValue};
+use verkle_core::{proof::IpaProof, Point, Stem, TrieValue};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExecutionWitness {
     #[serde(alias = "stateDiff")]
@@ -12,7 +12,7 @@ pub struct ExecutionWitness {
     pub verkle_proof: VerkleProof,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StemStateDiff {
     pub stem: Stem,
@@ -20,7 +20,7 @@ pub struct StemStateDiff {
     pub suffix_diffs: Vec<SuffixStateDiff>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SuffixStateDiff {
     pub suffix: U8,
@@ -31,7 +31,7 @@ pub struct SuffixStateDiff {
 }
 
 #[serde_nested]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct VerkleProof {
     #[serde(alias = "otherStems")]
@@ -43,14 +43,4 @@ pub struct VerkleProof {
     pub d: Point,
     #[serde(alias = "ipaProof")]
     pub ipa_proof: IpaProof,
-}
-
-#[serde_nested]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct IpaProof {
-    pub cl: [Point; VERKLE_NODE_WIDTH_BITS],
-    pub cr: [Point; VERKLE_NODE_WIDTH_BITS],
-    #[serde(alias = "finalEvaluation")]
-    pub final_evaluation: ScalarField,
 }
