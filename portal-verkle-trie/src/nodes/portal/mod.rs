@@ -7,4 +7,4 @@ mod branch_bundle;
 mod branch_fragment;
 mod leaf_bundle;
 mod leaf_fragment;
-mod ssz;
+pub mod ssz;

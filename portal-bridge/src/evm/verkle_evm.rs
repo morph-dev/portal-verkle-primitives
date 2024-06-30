@@ -1,14 +1,17 @@
-use std::collections::HashMap;
-
-use alloy_primitives::{address, keccak256, U256, U8};
-use verkle_core::{storage::AccountStorageLayout, Stem, TrieKey, TrieValue};
+use alloy_primitives::{address, keccak256, U8};
+use verkle_core::{
+    constants::{BALANCE_LEAF_KEY, CODE_KECCAK_LEAF_KEY, NONCE_LEAF_KEY, VERSION_LEAF_KEY},
+    storage::AccountStorageLayout,
+    TrieValue,
+};
 
 use super::error::EvmError;
 use crate::{
     types::{
         beacon::ExecutionPayload,
         genesis::GenesisConfig,
-        witness::{StemStateDiff, SuffixStateDiff},
+        state_write::StateWrite,
+        witness::{StateDiff, SuffixStateDiff},
     },
     verkle_trie::VerkleTrie,
 };
@@ -28,68 +31,29 @@ impl VerkleEvm {
         self.next_block
     }
 
-    pub fn initialize_genesis(&mut self, genesis_config: &GenesisConfig) -> Result<(), EvmError> {
+    pub fn initialize_genesis(
+        &mut self,
+        genesis_config: &GenesisConfig,
+    ) -> Result<StateWrite, EvmError> {
         if self.next_block != 0 {
             return Err(EvmError::UnexpectedBlock {
                 expected: self.next_block,
                 actual: 0,
             });
         }
-        let mut state_diffs =
-            HashMap::<Stem, StemStateDiff>::with_capacity(genesis_config.alloc.len());
-        let mut insert_state_diff = |key: TrieKey, value: TrieValue| {
-            let stem = key.stem();
-            let state_diff = state_diffs.entry(stem).or_insert_with(|| StemStateDiff {
-                stem,
-                suffix_diffs: Vec::new(),
-            });
-            state_diff.suffix_diffs.push(SuffixStateDiff {
-                suffix: U8::from(key.suffix()),
-                current_value: None,
-                new_value: Some(value),
-            })
-        };
-
-        for (address, account_alloc) in &genesis_config.alloc {
-            let storage_layout = AccountStorageLayout::new(*address);
-            insert_state_diff(storage_layout.version_key(), U256::ZERO.into());
-            insert_state_diff(storage_layout.balance_key(), account_alloc.balance.into());
-            insert_state_diff(
-                storage_layout.nonce_key(),
-                account_alloc.nonce.unwrap_or(U256::ZERO).into(),
-            );
-
-            match &account_alloc.code {
-                None => insert_state_diff(storage_layout.code_hash_key(), keccak256([]).into()),
-                Some(code) => {
-                    insert_state_diff(storage_layout.code_hash_key(), keccak256(code).into());
-                    insert_state_diff(
-                        storage_layout.code_size_key(),
-                        U256::from(code.len()).into(),
-                    );
-                    for (key, value) in storage_layout.chunkify_code(code) {
-                        insert_state_diff(key, value);
-                    }
-                }
-            }
-
-            if let Some(storage) = &account_alloc.storage {
-                for (storage_key, value) in storage {
-                    insert_state_diff(storage_layout.storage_slot_key(*storage_key), *value);
-                }
-            }
-        }
-
-        let state_diffs = state_diffs.into_values().collect::<Vec<_>>();
+        let state_write = genesis_config.generate_state_diff().into();
         self.state
-            .update(&state_diffs)
+            .update(&state_write)
             .map_err(EvmError::TrieError)?;
         self.next_block += 1;
 
-        Ok(())
+        Ok(state_write)
     }
 
-    pub fn process_block(&mut self, execution_payload: &ExecutionPayload) -> Result<(), EvmError> {
+    pub fn process_block(
+        &mut self,
+        execution_payload: &ExecutionPayload,
+    ) -> Result<StateWrite, EvmError> {
         if self.next_block != execution_payload.block_number.to::<u64>() {
             return Err(EvmError::UnexpectedBlock {
                 expected: self.next_block,
@@ -97,23 +61,16 @@ impl VerkleEvm {
             });
         }
 
+        let mut state_diff = execution_payload.execution_witness.state_diff.clone();
+
         if self.next_block == 1 {
-            // Eip-2935: Initialize account: "0xfffffffffffffffffffffffffffffffffffffffe"
-            // NOTE: This is not included into execution_witness (probably a bug).
-            let storage_layout =
-                AccountStorageLayout::new(address!("fffffffffffffffffffffffffffffffffffffffe"));
-            self.state
-                .insert(&storage_layout.version_key(), TrieValue::ZERO);
-            self.state
-                .insert(&storage_layout.balance_key(), TrieValue::ZERO);
-            self.state
-                .insert(&storage_layout.nonce_key(), TrieValue::ZERO);
-            self.state
-                .insert(&storage_layout.code_hash_key(), keccak256([]).into());
+            update_state_diff_for_eip2935(&mut state_diff);
         }
 
+        let state_write = StateWrite::from(state_diff);
+
         self.state
-            .update(&execution_payload.execution_witness.state_diff)
+            .update(&state_write)
             .map_err(EvmError::TrieError)?;
         self.next_block += 1;
 
@@ -123,7 +80,33 @@ impl VerkleEvm {
                 actual: self.state.root(),
             });
         }
-        Ok(())
+        Ok(state_write)
+    }
+}
+
+/// Eip-2935: Initialize account: "0xfffffffffffffffffffffffffffffffffffffffe"
+/// NOTE: This is not included into execution_witness (probably a bug).
+fn update_state_diff_for_eip2935(state_diff: &mut StateDiff) {
+    let storage_layout =
+        AccountStorageLayout::new(address!("fffffffffffffffffffffffffffffffffffffffe"));
+    let suffix_diffs = [
+        (VERSION_LEAF_KEY, TrieValue::ZERO),
+        (BALANCE_LEAF_KEY, TrieValue::ZERO),
+        (NONCE_LEAF_KEY, TrieValue::ZERO),
+        (CODE_KECCAK_LEAF_KEY, TrieValue::from(keccak256([]))),
+    ];
+
+    let stem_state_diff = state_diff
+        .iter_mut()
+        .find(|stem_state_diff| &stem_state_diff.stem == storage_layout.account_storage_stem())
+        .expect("to find StemStateDiff for EIP-2935");
+
+    for (suffix, trie_value) in suffix_diffs {
+        stem_state_diff.suffix_diffs.push(SuffixStateDiff {
+            suffix: U8::from(suffix),
+            current_value: None,
+            new_value: Some(trie_value),
+        });
     }
 }
 

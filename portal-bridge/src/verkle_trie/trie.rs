@@ -2,7 +2,7 @@ use alloy_primitives::B256;
 use verkle_core::{TrieKey, TrieValue};
 
 use super::{error::VerkleTrieError, nodes::branch::BranchNode};
-use crate::types::witness::StemStateDiff;
+use crate::types::state_write::StateWrite;
 
 /// Fully in memory implementation of the Verkle Trie.
 ///
@@ -34,16 +34,9 @@ impl VerkleTrie {
         self.root_node.insert(key, value)
     }
 
-    pub fn update(&mut self, state_diffs: &[StemStateDiff]) -> Result<(), VerkleTrieError> {
-        for state_diff in state_diffs.iter() {
-            // Check that there is at least one state write
-            if state_diff
-                .suffix_diffs
-                .iter()
-                .any(|suffix_diff| suffix_diff.new_value.is_some())
-            {
-                self.root_node.update(state_diff)?;
-            }
+    pub fn update(&mut self, state_write: &StateWrite) -> Result<(), VerkleTrieError> {
+        for stem_state_write in state_write.iter() {
+            self.root_node.update(stem_state_write)?;
         }
         Ok(())
     }

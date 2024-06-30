@@ -9,7 +9,7 @@ use verkle_core::{
     Point, ScalarField, Stem, TrieValue, TrieValueSplit,
 };
 
-use crate::{types::witness::StemStateDiff, verkle_trie::error::VerkleTrieError};
+use crate::{types::state_write::StemStateWrite, verkle_trie::error::VerkleTrieError};
 
 use super::commitment::Commitment;
 
@@ -88,18 +88,18 @@ impl LeafNode {
         }
     }
 
-    pub fn update(&mut self, state_diff: &StemStateDiff) -> Result<(), VerkleTrieError> {
-        if self.stem != state_diff.stem {
+    pub fn update(&mut self, state_write: &StemStateWrite) -> Result<(), VerkleTrieError> {
+        if self.stem != state_write.stem {
             return Err(VerkleTrieError::UnexpectedStem {
                 expected: self.stem,
-                actual: state_diff.stem,
+                actual: state_write.stem,
             });
         }
         let old_c1_commitment_hash = self.c1.commitment_hash();
         let old_c2_commitment_hash = self.c2.commitment_hash();
-        for diff in state_diff.suffix_diffs.iter() {
-            let index = diff.suffix.byte(0) as usize;
-            let old_value = diff.current_value;
+        for suffix_write in state_write.suffix_writes.iter() {
+            let index = suffix_write.suffix as usize;
+            let old_value = suffix_write.old_value;
             if self.values[index] != old_value {
                 return Err(VerkleTrieError::WrongOldValue {
                     stem: self.stem,
@@ -108,9 +108,7 @@ impl LeafNode {
                     actual: old_value,
                 });
             }
-            let Some(new_value) = diff.new_value else {
-                continue;
-            };
+            let new_value = suffix_write.new_value;
             let (new_low_value, new_high_value) = new_value.split();
             let old_value = self.values[index].replace(new_value);
             let (old_low_value, old_high_value) = old_value.split();

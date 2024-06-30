@@ -5,11 +5,12 @@ use verkle_core::{proof::IpaProof, Point, Stem, TrieValue};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ExecutionWitness {
-    #[serde(alias = "stateDiff")]
-    pub state_diff: Vec<StemStateDiff>,
-    #[serde(alias = "verkleProof")]
-    pub verkle_proof: VerkleProof,
+pub struct SuffixStateDiff {
+    pub suffix: U8,
+    #[serde(alias = "currentValue")]
+    pub current_value: Option<TrieValue>,
+    #[serde(alias = "newValue")]
+    pub new_value: Option<TrieValue>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,15 +21,7 @@ pub struct StemStateDiff {
     pub suffix_diffs: Vec<SuffixStateDiff>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SuffixStateDiff {
-    pub suffix: U8,
-    #[serde(alias = "currentValue")]
-    pub current_value: Option<TrieValue>,
-    #[serde(alias = "newValue")]
-    pub new_value: Option<TrieValue>,
-}
+pub type StateDiff = Vec<StemStateDiff>;
 
 #[serde_nested]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,4 +36,13 @@ pub struct VerkleProof {
     pub d: Point,
     #[serde(alias = "ipaProof")]
     pub ipa_proof: IpaProof,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExecutionWitness {
+    #[serde(alias = "stateDiff")]
+    pub state_diff: StateDiff,
+    #[serde(alias = "verkleProof")]
+    pub verkle_proof: VerkleProof,
 }

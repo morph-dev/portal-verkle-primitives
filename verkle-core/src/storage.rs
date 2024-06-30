@@ -26,6 +26,10 @@ impl AccountStorageLayout {
         }
     }
 
+    pub fn account_storage_stem(&self) -> &Stem {
+        &self.base_storage_stem
+    }
+
     pub fn version_key(&self) -> TrieKey {
         TrieKey::from_stem_and_suffix(&self.base_storage_stem, VERSION_LEAF_KEY)
     }

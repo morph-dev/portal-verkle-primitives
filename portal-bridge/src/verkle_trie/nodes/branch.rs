@@ -6,7 +6,7 @@ use verkle_core::{
     Point, ScalarField, Stem, TrieKey, TrieValue,
 };
 
-use crate::{types::witness::StemStateDiff, verkle_trie::error::VerkleTrieError};
+use crate::{types::state_write::StemStateWrite, verkle_trie::error::VerkleTrieError};
 
 use super::{commitment::Commitment, leaf::LeafNode, Node};
 
@@ -93,27 +93,27 @@ impl BranchNode {
         self.children[index] = child;
     }
 
-    pub fn update(&mut self, state_diff: &StemStateDiff) -> Result<(), VerkleTrieError> {
-        let index = state_diff.stem[self.depth] as usize;
+    pub fn update(&mut self, state_write: &StemStateWrite) -> Result<(), VerkleTrieError> {
+        let index = state_write.stem[self.depth] as usize;
         let child = &mut self.children[index];
         let old_commitment_hash = child.commitment_hash();
         match child {
             Node::Empty => {
-                let mut leaf_node = Box::new(LeafNode::new(state_diff.stem));
-                leaf_node.update(state_diff)?;
+                let mut leaf_node = Box::new(LeafNode::new(state_write.stem));
+                leaf_node.update(state_write)?;
                 *child = Node::Leaf(leaf_node);
             }
-            Node::Branch(branch_node) => branch_node.update(state_diff)?,
+            Node::Branch(branch_node) => branch_node.update(state_write)?,
             Node::Leaf(leaf_node) => {
-                if leaf_node.stem() == &state_diff.stem {
-                    leaf_node.update(state_diff)?;
+                if leaf_node.stem() == &state_write.stem {
+                    leaf_node.update(state_write)?;
                 } else {
                     let old_child_index_in_new_branch = leaf_node.stem()[self.depth + 1] as usize;
                     let old_child = mem::replace(child, Node::Empty);
 
                     let mut branch_node = Box::new(Self::new(self.depth + 1));
                     branch_node.set_child(old_child_index_in_new_branch, old_child);
-                    branch_node.update(state_diff)?;
+                    branch_node.update(state_write)?;
 
                     *child = Node::Branch(branch_node);
                 }

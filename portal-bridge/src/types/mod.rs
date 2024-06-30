@@ -4,6 +4,7 @@ use self::beacon::SignedBeaconBlock;
 
 pub mod beacon;
 pub mod genesis;
+pub mod state_write;
 pub mod witness;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
