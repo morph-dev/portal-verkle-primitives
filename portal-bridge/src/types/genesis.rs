@@ -6,7 +6,7 @@ use verkle_core::{storage::AccountStorageLayout, Stem, TrieKey, TrieValue};
 
 use super::witness::{StateDiff, StemStateDiff, SuffixStateDiff};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AccountAlloc {
     pub balance: U256,
@@ -15,7 +15,7 @@ pub struct AccountAlloc {
     pub storage: Option<HashMap<U256, TrieValue>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GenesisConfig {
     pub alloc: HashMap<Address, AccountAlloc>,
 }

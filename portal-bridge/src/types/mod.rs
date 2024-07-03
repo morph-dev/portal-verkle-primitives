@@ -7,7 +7,7 @@ pub mod genesis;
 pub mod state_write;
 pub mod witness;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JsonResponseMessage {
     pub data: SignedBeaconBlock,
 }

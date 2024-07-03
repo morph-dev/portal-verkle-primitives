@@ -3,7 +3,7 @@ use verkle_core::{Stem, TrieValue};
 
 use super::witness::{StateDiff, StemStateDiff, SuffixStateDiff};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SuffixStateWrites {
     pub suffix: u8,
     pub old_value: Option<TrieValue>,
@@ -30,7 +30,7 @@ impl SuffixStateWrites {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StemStateWrite {
     pub stem: Stem,
     pub suffix_writes: Vec<SuffixStateWrites>,

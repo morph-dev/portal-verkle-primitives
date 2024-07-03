@@ -3,24 +3,24 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::witness::ExecutionWitness;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignedBeaconBlock {
     pub message: BeaconBlock,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BeaconBlock {
     pub parent_root: B256,
     pub state_root: B256,
     pub body: BeaconBlockBody,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BeaconBlockBody {
     pub execution_payload: ExecutionPayload,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecutionPayload {
     pub block_number: U64,
     pub block_hash: B256,

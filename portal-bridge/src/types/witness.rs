@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_nested_with::serde_nested;
 use verkle_core::{proof::IpaProof, Point, Stem, TrieValue};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SuffixStateDiff {
     pub suffix: U8,
@@ -13,7 +13,7 @@ pub struct SuffixStateDiff {
     pub new_value: Option<TrieValue>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StemStateDiff {
     pub stem: Stem,
@@ -24,7 +24,7 @@ pub struct StemStateDiff {
 pub type StateDiff = Vec<StemStateDiff>;
 
 #[serde_nested]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct VerkleProof {
     #[serde(alias = "otherStems")]
@@ -38,7 +38,7 @@ pub struct VerkleProof {
     pub ipa_proof: IpaProof,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExecutionWitness {
     #[serde(alias = "stateDiff")]
