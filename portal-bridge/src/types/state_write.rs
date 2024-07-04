@@ -57,9 +57,9 @@ impl StemStateWrite {
 }
 
 #[derive(Debug, Clone, Deref, Index, IndexMut)]
-pub struct StateWrite(Vec<StemStateWrite>);
+pub struct StateWrites(Vec<StemStateWrite>);
 
-impl From<StateDiff> for StateWrite {
+impl From<StateDiff> for StateWrites {
     fn from(state_diff: StateDiff) -> Self {
         Self(
             state_diff

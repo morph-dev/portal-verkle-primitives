@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-const DATA_PATH: &str = "data/verkle-devnet-6/";
+pub const TESTNET_DATA_PATH: &str = "data/verkle-devnet-6/";
 
 pub fn beacon_slot_path(slot: u64) -> PathBuf {
-    PathBuf::from(DATA_PATH).join(format!("beacon/slot.{slot}.json"))
+    PathBuf::from(TESTNET_DATA_PATH).join(format!("beacon/slot.{slot}.json"))
 }
 
 pub fn genesis_path() -> PathBuf {
-    PathBuf::from(DATA_PATH).join("genesis.json")
+    PathBuf::from(TESTNET_DATA_PATH).join("genesis.json")
 }
 
 #[cfg(test)]

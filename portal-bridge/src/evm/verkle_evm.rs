@@ -10,7 +10,7 @@ use crate::{
     types::{
         beacon::ExecutionPayload,
         genesis::GenesisConfig,
-        state_write::StateWrite,
+        state_write::StateWrites,
         witness::{StateDiff, SuffixStateDiff},
     },
     verkle_trie::VerkleTrie,
@@ -34,26 +34,26 @@ impl VerkleEvm {
     pub fn initialize_genesis(
         &mut self,
         genesis_config: &GenesisConfig,
-    ) -> Result<StateWrite, EvmError> {
+    ) -> Result<StateWrites, EvmError> {
         if self.next_block != 0 {
             return Err(EvmError::UnexpectedBlock {
                 expected: self.next_block,
                 actual: 0,
             });
         }
-        let state_write = genesis_config.generate_state_diff().into();
+        let state_writes = genesis_config.generate_state_diff().into();
         self.state
-            .update(&state_write)
+            .update(&state_writes)
             .map_err(EvmError::TrieError)?;
         self.next_block += 1;
 
-        Ok(state_write)
+        Ok(state_writes)
     }
 
     pub fn process_block(
         &mut self,
         execution_payload: &ExecutionPayload,
-    ) -> Result<StateWrite, EvmError> {
+    ) -> Result<StateWrites, EvmError> {
         if self.next_block != execution_payload.block_number.to::<u64>() {
             return Err(EvmError::UnexpectedBlock {
                 expected: self.next_block,
@@ -67,10 +67,10 @@ impl VerkleEvm {
             update_state_diff_for_eip2935(&mut state_diff);
         }
 
-        let state_write = StateWrite::from(state_diff);
+        let state_writes = StateWrites::from(state_diff);
 
         self.state
-            .update(&state_write)
+            .update(&state_writes)
             .map_err(EvmError::TrieError)?;
         self.next_block += 1;
 
@@ -80,7 +80,7 @@ impl VerkleEvm {
                 actual: self.state.root(),
             });
         }
-        Ok(state_write)
+        Ok(state_writes)
     }
 }
 
@@ -118,8 +118,9 @@ mod tests {
     use anyhow::Result;
 
     use crate::{
-        paths::{beacon_slot_path, genesis_path, test_path},
-        types::JsonResponseMessage,
+        paths::{beacon_slot_path, test_path},
+        types::SuccessMessage,
+        utils::read_genesis_for_test,
     };
 
     use super::*;
@@ -130,10 +131,7 @@ mod tests {
             b256!("1fbf85345a3cbba9a6d44f991b721e55620a22397c2a93ee8d5011136ac300ee");
 
         let mut evm = VerkleEvm::new();
-
-        let reader = BufReader::new(File::open(test_path(genesis_path()))?);
-        let genesis_config = serde_json::from_reader(reader)?;
-        evm.initialize_genesis(&genesis_config)?;
+        evm.initialize_genesis(&read_genesis_for_test()?)?;
 
         assert_eq!(evm.state.root(), STATE_ROOT);
         Ok(())
@@ -142,13 +140,10 @@ mod tests {
     #[test]
     fn process_block_1() -> Result<()> {
         let mut evm = VerkleEvm::new();
-
-        let reader = BufReader::new(File::open(test_path(genesis_path()))?);
-        let genesis_config = serde_json::from_reader(reader)?;
-        evm.initialize_genesis(&genesis_config)?;
+        evm.initialize_genesis(&read_genesis_for_test()?)?;
 
         let reader = BufReader::new(File::open(test_path(beacon_slot_path(1)))?);
-        let response: JsonResponseMessage = serde_json::from_reader(reader)?;
+        let response: SuccessMessage = serde_json::from_reader(reader)?;
         let execution_payload = response.data.message.body.execution_payload;
         evm.process_block(&execution_payload)?;
         assert_eq!(evm.state.root(), execution_payload.state_root);
@@ -158,10 +153,7 @@ mod tests {
     #[test]
     fn process_block_1000() -> Result<()> {
         let mut evm = VerkleEvm::new();
-
-        let reader = BufReader::new(File::open(test_path(genesis_path()))?);
-        let genesis_config = serde_json::from_reader(reader)?;
-        evm.initialize_genesis(&genesis_config)?;
+        evm.initialize_genesis(&read_genesis_for_test()?)?;
 
         for block in 1..=1000 {
             let path = test_path(beacon_slot_path(block));
@@ -169,7 +161,7 @@ mod tests {
                 continue;
             }
             let reader = BufReader::new(File::open(path)?);
-            let response: JsonResponseMessage = serde_json::from_reader(reader)?;
+            let response: SuccessMessage = serde_json::from_reader(reader)?;
             let execution_payload = response.data.message.body.execution_payload;
             evm.process_block(&execution_payload)?;
         }
