@@ -4,13 +4,13 @@ use verkle_core::{Stem, TrieValue};
 use super::witness::{StateDiff, StemStateDiff, SuffixStateDiff};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SuffixStateWrites {
+pub struct SuffixStateWrite {
     pub suffix: u8,
     pub old_value: Option<TrieValue>,
     pub new_value: TrieValue,
 }
 
-impl SuffixStateWrites {
+impl SuffixStateWrite {
     pub fn from(suffix_state_diff: SuffixStateDiff) -> Option<Self> {
         let SuffixStateDiff {
             suffix,
@@ -33,7 +33,7 @@ impl SuffixStateWrites {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StemStateWrite {
     pub stem: Stem,
-    pub suffix_writes: Vec<SuffixStateWrites>,
+    pub suffix_writes: Vec<SuffixStateWrite>,
 }
 
 impl StemStateWrite {
@@ -42,7 +42,7 @@ impl StemStateWrite {
 
         let suffix_writes = suffix_diffs
             .into_iter()
-            .filter_map(SuffixStateWrites::from)
+            .filter_map(SuffixStateWrite::from)
             .collect::<Vec<_>>();
 
         if suffix_writes.is_empty() {

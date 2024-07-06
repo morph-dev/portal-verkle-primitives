@@ -1,7 +1,10 @@
 use alloy_primitives::B256;
-use verkle_core::{TrieKey, TrieValue};
+use verkle_core::{Stem, TrieKey, TrieValue};
 
-use super::{error::VerkleTrieError, nodes::branch::BranchNode};
+use super::{
+    error::VerkleTrieError,
+    nodes::{branch::BranchNode, leaf::LeafNode, Node},
+};
 use crate::types::state_write::StateWrites;
 
 /// Fully in memory implementation of the Verkle Trie.
@@ -9,6 +12,11 @@ use crate::types::state_write::StateWrites;
 /// Primary use case is to update the trie based on the `ExecutionWitness`.
 pub struct VerkleTrie {
     root_node: BranchNode,
+}
+
+pub struct PathToLeaf<'a> {
+    pub branches: Vec<&'a BranchNode>,
+    pub leaf: &'a LeafNode,
 }
 
 impl VerkleTrie {
@@ -39,6 +47,35 @@ impl VerkleTrie {
             self.root_node.update(stem_state_write)?;
         }
         Ok(())
+    }
+
+    pub fn traverse_to_leaf<'me>(
+        &'me self,
+        stem: &Stem,
+    ) -> Result<PathToLeaf<'me>, VerkleTrieError> {
+        let mut branches = vec![];
+
+        let mut node = &self.root_node;
+        let mut depth = 0;
+
+        loop {
+            branches.push(node);
+            node = match node.get_child(stem[depth] as usize) {
+                Node::Empty => return Err(VerkleTrieError::NodeNotFound),
+                Node::Branch(next_node) => next_node,
+                Node::Leaf(leaf) => {
+                    if leaf.stem() == stem {
+                        return Ok(PathToLeaf { branches, leaf });
+                    } else {
+                        return Err(VerkleTrieError::UnexpectedStem {
+                            expected: *stem,
+                            actual: *leaf.stem(),
+                        });
+                    }
+                }
+            };
+            depth += 1;
+        }
     }
 }
 

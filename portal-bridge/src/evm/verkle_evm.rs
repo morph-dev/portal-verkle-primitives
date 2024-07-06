@@ -27,6 +27,10 @@ impl VerkleEvm {
         Self::default()
     }
 
+    pub fn state_trie(&self) -> &VerkleTrie {
+        &self.state
+    }
+
     pub fn next_block(&self) -> u64 {
         self.next_block
     }

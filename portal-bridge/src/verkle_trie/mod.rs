@@ -3,4 +3,4 @@ pub mod nodes;
 mod trie;
 pub mod trie_printer;
 
-pub use trie::VerkleTrie;
+pub use trie::{PathToLeaf, VerkleTrie};

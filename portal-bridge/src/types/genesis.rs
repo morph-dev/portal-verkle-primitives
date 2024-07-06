@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use alloy_primitives::{keccak256, Address, Bytes, U256, U8};
+use alloy_primitives::{b256, keccak256, Address, Bytes, B256, U256, U8};
 use serde::{Deserialize, Serialize};
 use verkle_core::{storage::AccountStorageLayout, Stem, TrieKey, TrieValue};
 
@@ -21,6 +21,9 @@ pub struct GenesisConfig {
 }
 
 impl GenesisConfig {
+    pub const DEVNET6_BLOCK_HASH: B256 =
+        b256!("3fe165c03e7a77d1e3759362ebeeb16fd964cb411ce11fbe35c7032fab5b9a8a");
+
     pub fn generate_state_diff(&self) -> StateDiff {
         let mut state_diffs = BTreeMap::<Stem, StemStateDiff>::new();
         let mut insert_state_diff = |key: TrieKey, value: TrieValue| {

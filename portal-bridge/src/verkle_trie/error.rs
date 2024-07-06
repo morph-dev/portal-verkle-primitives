@@ -13,4 +13,6 @@ pub enum VerkleTrieError {
         expected: Option<TrieValue>,
         actual: Option<TrieValue>,
     },
+    #[error("Node not found during the trie traversal")]
+    NodeNotFound,
 }

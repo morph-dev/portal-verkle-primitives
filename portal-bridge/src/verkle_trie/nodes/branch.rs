@@ -1,12 +1,18 @@
 use std::{array, mem};
 
+use portal_verkle_trie::nodes::portal::ssz::{
+    nodes::{BranchBundleNode, BranchFragmentNode},
+    sparse_vector::SparseVector,
+};
 use verkle_core::{
-    constants::VERKLE_NODE_WIDTH,
+    constants::{PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH},
     msm::{DefaultMsm, MultiScalarMultiplicator},
     Point, ScalarField, Stem, TrieKey, TrieValue,
 };
 
-use crate::{types::state_write::StemStateWrite, verkle_trie::error::VerkleTrieError};
+use crate::{
+    types::state_write::StemStateWrite, utils::bundle_proof, verkle_trie::error::VerkleTrieError,
+};
 
 use super::{commitment::Commitment, leaf::LeafNode, Node};
 
@@ -122,5 +128,52 @@ impl BranchNode {
         self.commitment +=
             DefaultMsm.scalar_mul(index, child.commitment_hash() - old_commitment_hash);
         Ok(())
+    }
+
+    fn get_fragment_commitment(&self, fragment_index: usize) -> Option<Point> {
+        let start_index = fragment_index * PORTAL_NETWORK_NODE_WIDTH;
+        let mut commitment = Point::zero();
+        for fragment_child_index in 0..PORTAL_NETWORK_NODE_WIDTH {
+            let index = start_index + fragment_child_index;
+            let child_commitment = self.children[index].commitment();
+            if !child_commitment.is_zero() {
+                commitment += DefaultMsm.scalar_mul(index, child_commitment.map_to_scalar_field());
+            }
+        }
+        if commitment.is_zero() {
+            None
+        } else {
+            Some(commitment)
+        }
+    }
+
+    pub fn extract_bundle_node(&self) -> BranchBundleNode {
+        let fragment_commitments = SparseVector::new(array::from_fn(|fragment_index| {
+            self.get_fragment_commitment(fragment_index)
+        }));
+        let bundle_proof = bundle_proof(&fragment_commitments);
+        BranchBundleNode {
+            fragments: fragment_commitments,
+            proof: bundle_proof,
+        }
+    }
+
+    pub fn extract_fragment_node(&self, fragment_index: usize) -> (Point, BranchFragmentNode) {
+        let fragment_commitment = self
+            .get_fragment_commitment(fragment_index)
+            .unwrap_or_else(Point::zero);
+        let fragment_node = BranchFragmentNode {
+            fragment_index: fragment_index as u8,
+            children: SparseVector::new(array::from_fn(|fragment_child_index| {
+                let child_index = fragment_index * PORTAL_NETWORK_NODE_WIDTH + fragment_child_index;
+                let commitment = self.children[child_index].commitment();
+                if commitment.is_zero() {
+                    None
+                } else {
+                    Some(commitment)
+                }
+            })),
+        };
+        (fragment_commitment, fragment_node)
     }
 }

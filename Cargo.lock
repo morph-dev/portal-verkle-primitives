@@ -2982,13 +2982,16 @@ dependencies = [
  "clap",
  "derive_more",
  "ethportal-api",
+ "jsonrpsee",
+ "portal-verkle-trie 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
  "reqwest",
  "serde",
  "serde_json",
  "serde_nested_with",
+ "ssz_types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "tokio",
- "verkle-core 0.1.0",
+ "verkle-core 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
 ]
 
 [[package]]

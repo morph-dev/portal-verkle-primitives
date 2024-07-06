@@ -1,15 +1,21 @@
 use std::array;
 
+use portal_verkle_trie::nodes::portal::ssz::{
+    nodes::{LeafBundleNode, LeafFragmentNode},
+    sparse_vector::SparseVector,
+};
 use verkle_core::{
     constants::{
         EXTENSION_C1_INDEX, EXTENSION_C2_INDEX, EXTENSION_MARKER_INDEX, EXTENSION_STEM_INDEX,
-        VERKLE_NODE_WIDTH,
+        PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH,
     },
     msm::{DefaultMsm, MultiScalarMultiplicator},
     Point, ScalarField, Stem, TrieValue, TrieValueSplit,
 };
 
-use crate::{types::state_write::StemStateWrite, verkle_trie::error::VerkleTrieError};
+use crate::{
+    types::state_write::StemStateWrite, utils::bundle_proof, verkle_trie::error::VerkleTrieError,
+};
 
 use super::commitment::Commitment;
 
@@ -134,5 +140,52 @@ impl LeafNode {
             self.c2.commitment_hash() - old_c2_commitment_hash,
         );
         Ok(())
+    }
+
+    fn get_fragment_commitment(&self, fragment_index: usize) -> Option<Point> {
+        let start_index = fragment_index * PORTAL_NETWORK_NODE_WIDTH;
+        let mut commitment = Point::zero();
+        for fragment_child_index in 0..PORTAL_NETWORK_NODE_WIDTH {
+            let index = start_index + fragment_child_index;
+            if let Some(value) = &self.values[index] {
+                let (low_value, high_value) = value.split();
+
+                let suffix_index = index % (VERKLE_NODE_WIDTH / 2);
+                commitment += DefaultMsm.scalar_mul(2 * suffix_index, low_value);
+                commitment += DefaultMsm.scalar_mul(2 * suffix_index + 1, high_value);
+            }
+        }
+        if commitment.is_zero() {
+            None
+        } else {
+            Some(commitment)
+        }
+    }
+
+    pub fn extract_bundle_node(&self) -> LeafBundleNode {
+        let fragment_commitments = SparseVector::new(array::from_fn(|fragment_index| {
+            self.get_fragment_commitment(fragment_index)
+        }));
+        let bundle_proof = bundle_proof(&fragment_commitments);
+        LeafBundleNode {
+            marker: self.marker,
+            stem: *self.stem(),
+            fragments: fragment_commitments,
+            proof: bundle_proof,
+        }
+    }
+
+    pub fn extract_fragment_node(&self, fragment_index: usize) -> (Point, LeafFragmentNode) {
+        let fragment_commitment = self
+            .get_fragment_commitment(fragment_index)
+            .unwrap_or_else(Point::zero);
+        let fragment_node = LeafFragmentNode {
+            fragment_index: fragment_index as u8,
+            children: SparseVector::new(array::from_fn(|fragment_child_index| {
+                let child_index = fragment_index * PORTAL_NETWORK_NODE_WIDTH + fragment_child_index;
+                self.values[child_index]
+            })),
+        };
+        (fragment_commitment, fragment_node)
     }
 }
