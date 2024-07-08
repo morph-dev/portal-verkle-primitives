@@ -1,4 +1,7 @@
+use std::collections::HashSet;
+
 use alloy_primitives::{address, keccak256, U8};
+use portal_verkle_trie::nodes::portal::ssz::TriePath;
 use verkle_core::{
     constants::{BALANCE_LEAF_KEY, CODE_KECCAK_LEAF_KEY, NONCE_LEAF_KEY, VERSION_LEAF_KEY},
     storage::AccountStorageLayout,
@@ -16,75 +19,71 @@ use crate::{
     verkle_trie::VerkleTrie,
 };
 
-#[derive(Default)]
 pub struct VerkleEvm {
-    next_block: u64,
-    state: VerkleTrie,
+    block: u64,
+    state_trie: VerkleTrie,
+}
+
+pub struct ProcessBlockResult {
+    pub state_writes: StateWrites,
+    pub new_branch_nodes: HashSet<TriePath>,
 }
 
 impl VerkleEvm {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(genesis_config: &GenesisConfig) -> Result<Self, EvmError> {
+        let mut state_trie = VerkleTrie::new();
+        state_trie
+            .update(&genesis_config.generate_state_diff().into())
+            .map_err(EvmError::TrieError)?;
+        Ok(Self {
+            block: 0,
+            state_trie,
+        })
     }
 
     pub fn state_trie(&self) -> &VerkleTrie {
-        &self.state
+        &self.state_trie
     }
 
-    pub fn next_block(&self) -> u64 {
-        self.next_block
-    }
-
-    pub fn initialize_genesis(
-        &mut self,
-        genesis_config: &GenesisConfig,
-    ) -> Result<StateWrites, EvmError> {
-        if self.next_block != 0 {
-            return Err(EvmError::UnexpectedBlock {
-                expected: self.next_block,
-                actual: 0,
-            });
-        }
-        let state_writes = genesis_config.generate_state_diff().into();
-        self.state
-            .update(&state_writes)
-            .map_err(EvmError::TrieError)?;
-        self.next_block += 1;
-
-        Ok(state_writes)
+    pub fn block(&self) -> u64 {
+        self.block
     }
 
     pub fn process_block(
         &mut self,
         execution_payload: &ExecutionPayload,
-    ) -> Result<StateWrites, EvmError> {
-        if self.next_block != execution_payload.block_number.to::<u64>() {
+    ) -> Result<ProcessBlockResult, EvmError> {
+        if self.block + 1 != execution_payload.block_number.to::<u64>() {
             return Err(EvmError::UnexpectedBlock {
-                expected: self.next_block,
+                expected: self.block + 1,
                 actual: execution_payload.block_number.to(),
             });
         }
 
         let mut state_diff = execution_payload.execution_witness.state_diff.clone();
 
-        if self.next_block == 1 {
+        if self.block == 0 {
             update_state_diff_for_eip2935(&mut state_diff);
         }
 
         let state_writes = StateWrites::from(state_diff);
 
-        self.state
+        let new_branch_nodes = self
+            .state_trie
             .update(&state_writes)
             .map_err(EvmError::TrieError)?;
-        self.next_block += 1;
+        self.block += 1;
 
-        if self.state.root() != execution_payload.state_root {
+        if self.state_trie.root() != execution_payload.state_root {
             return Err(EvmError::WrongStateRoot {
                 expected: execution_payload.state_root,
-                actual: self.state.root(),
+                actual: self.state_trie.root(),
             });
         }
-        Ok(state_writes)
+        Ok(ProcessBlockResult {
+            state_writes,
+            new_branch_nodes,
+        })
     }
 }
 
@@ -134,30 +133,27 @@ mod tests {
         const STATE_ROOT: B256 =
             b256!("1fbf85345a3cbba9a6d44f991b721e55620a22397c2a93ee8d5011136ac300ee");
 
-        let mut evm = VerkleEvm::new();
-        evm.initialize_genesis(&read_genesis_for_test()?)?;
+        let evm = VerkleEvm::new(&read_genesis_for_test()?)?;
 
-        assert_eq!(evm.state.root(), STATE_ROOT);
+        assert_eq!(evm.state_trie.root(), STATE_ROOT);
         Ok(())
     }
 
     #[test]
     fn process_block_1() -> Result<()> {
-        let mut evm = VerkleEvm::new();
-        evm.initialize_genesis(&read_genesis_for_test()?)?;
+        let mut evm = VerkleEvm::new(&read_genesis_for_test()?)?;
 
         let reader = BufReader::new(File::open(test_path(beacon_slot_path(1)))?);
         let response: SuccessMessage = serde_json::from_reader(reader)?;
         let execution_payload = response.data.message.body.execution_payload;
         evm.process_block(&execution_payload)?;
-        assert_eq!(evm.state.root(), execution_payload.state_root);
+        assert_eq!(evm.state_trie.root(), execution_payload.state_root);
         Ok(())
     }
 
     #[test]
     fn process_block_1000() -> Result<()> {
-        let mut evm = VerkleEvm::new();
-        evm.initialize_genesis(&read_genesis_for_test()?)?;
+        let mut evm = VerkleEvm::new(&read_genesis_for_test()?)?;
 
         for block in 1..=1000 {
             let path = test_path(beacon_slot_path(block));

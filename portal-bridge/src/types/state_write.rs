@@ -1,4 +1,4 @@
-use derive_more::{Deref, Index, IndexMut};
+use derive_more::{Constructor, Deref, Index, IndexMut};
 use verkle_core::{Stem, TrieValue};
 
 use super::witness::{StateDiff, StemStateDiff, SuffixStateDiff};
@@ -56,7 +56,7 @@ impl StemStateWrite {
     }
 }
 
-#[derive(Debug, Clone, Deref, Index, IndexMut)]
+#[derive(Debug, Clone, Constructor, Deref, Index, IndexMut)]
 pub struct StateWrites(Vec<StemStateWrite>);
 
 impl From<StateDiff> for StateWrites {

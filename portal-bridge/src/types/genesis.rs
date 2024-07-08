@@ -23,6 +23,8 @@ pub struct GenesisConfig {
 impl GenesisConfig {
     pub const DEVNET6_BLOCK_HASH: B256 =
         b256!("3fe165c03e7a77d1e3759362ebeeb16fd964cb411ce11fbe35c7032fab5b9a8a");
+    pub const DEVNET6_STATE_ROOT: B256 =
+        b256!("1fbf85345a3cbba9a6d44f991b721e55620a22397c2a93ee8d5011136ac300ee");
 
     pub fn generate_state_diff(&self) -> StateDiff {
         let mut state_diffs = BTreeMap::<Stem, StemStateDiff>::new();

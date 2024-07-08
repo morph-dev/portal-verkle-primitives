@@ -1,4 +1,7 @@
+use std::collections::HashSet;
+
 use alloy_primitives::B256;
+use portal_verkle_trie::nodes::portal::ssz::TriePath;
 use verkle_core::{Stem, TrieKey, TrieValue};
 
 use super::{
@@ -42,11 +45,17 @@ impl VerkleTrie {
         self.root_node.insert(key, value)
     }
 
-    pub fn update(&mut self, state_writes: &StateWrites) -> Result<(), VerkleTrieError> {
+    pub fn update(
+        &mut self,
+        state_writes: &StateWrites,
+    ) -> Result<HashSet<TriePath>, VerkleTrieError> {
+        let mut created_branches = HashSet::new();
         for stem_state_write in state_writes.iter() {
-            self.root_node.update(stem_state_write)?;
+            if let Some(created_branch) = self.root_node.update(stem_state_write)? {
+                created_branches.insert(created_branch);
+            }
         }
-        Ok(())
+        Ok(created_branches)
     }
 
     pub fn traverse_to_leaf<'me>(

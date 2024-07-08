@@ -3,6 +3,7 @@ use std::{array, mem};
 use portal_verkle_trie::nodes::portal::ssz::{
     nodes::{BranchBundleNode, BranchFragmentNode},
     sparse_vector::SparseVector,
+    TriePath,
 };
 use verkle_core::{
     constants::{PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH},
@@ -99,17 +100,24 @@ impl BranchNode {
         self.children[index] = child;
     }
 
-    pub fn update(&mut self, state_write: &StemStateWrite) -> Result<(), VerkleTrieError> {
+    /// Returns the path to the new branch node if one was created.
+    pub fn update(
+        &mut self,
+        state_write: &StemStateWrite,
+    ) -> Result<Option<TriePath>, VerkleTrieError> {
         let index = state_write.stem[self.depth] as usize;
         let child = &mut self.children[index];
         let old_commitment_hash = child.commitment_hash();
+        let mut path_to_created_branch = None;
         match child {
             Node::Empty => {
                 let mut leaf_node = Box::new(LeafNode::new(state_write.stem));
                 leaf_node.update(state_write)?;
                 *child = Node::Leaf(leaf_node);
             }
-            Node::Branch(branch_node) => branch_node.update(state_write)?,
+            Node::Branch(branch_node) => {
+                path_to_created_branch = branch_node.update(state_write)?;
+            }
             Node::Leaf(leaf_node) => {
                 if leaf_node.stem() == &state_write.stem {
                     leaf_node.update(state_write)?;
@@ -121,13 +129,16 @@ impl BranchNode {
                     branch_node.set_child(old_child_index_in_new_branch, old_child);
                     branch_node.update(state_write)?;
 
+                    path_to_created_branch = Some(TriePath::from(
+                        state_write.stem[..branch_node.depth].to_vec(),
+                    ));
                     *child = Node::Branch(branch_node);
                 }
             }
         };
         self.commitment +=
             DefaultMsm.scalar_mul(index, child.commitment_hash() - old_commitment_hash);
-        Ok(())
+        Ok(path_to_created_branch)
     }
 
     fn get_fragment_commitment(&self, fragment_index: usize) -> Option<Point> {
