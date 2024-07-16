@@ -1,5 +1,6 @@
 use std::{
     fmt::Debug,
+    iter::Sum,
     ops::{Add, Sub},
 };
 
@@ -114,5 +115,11 @@ impl Sub<&Self> for Point {
 
     fn sub(self, rhs: &Self) -> Self::Output {
         Self(self.0 - rhs.0)
+    }
+}
+
+impl<'a> Sum<&'a Self> for Point {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |sum, item| sum + item)
     }
 }
