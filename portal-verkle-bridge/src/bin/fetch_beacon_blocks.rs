@@ -1,5 +1,5 @@
 use clap::Parser;
-use portal_bridge::beacon_block_fetcher::BeaconBlockFetcher;
+use portal_verkle_bridge::beacon_block_fetcher::BeaconBlockFetcher;
 
 const LOCALHOST_RPC_URL: &str = "http://localhost:9596/";
 

@@ -1,6 +1,6 @@
 use anyhow::bail;
 use clap::Parser;
-use portal_bridge::{
+use portal_verkle_bridge::{
     beacon_block_fetcher::BeaconBlockFetcher, state_trie_fetcher::StateTrieFetcher,
     types::genesis::GenesisConfig,
 };

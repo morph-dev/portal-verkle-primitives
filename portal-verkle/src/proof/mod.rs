@@ -4,6 +4,11 @@ use ssz_types::{typenum, FixedVector};
 
 use crate::{Point, ScalarField};
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[serde(transparent)]
+#[ssz(struct_behaviour = "transparent")]
+pub struct BundleProof(MultiPointProof);
+
 /// The multi-point proof based on IPA.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
 #[serde(deny_unknown_fields)]

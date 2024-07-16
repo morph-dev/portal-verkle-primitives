@@ -1,8 +1,8 @@
 [package]
-name = "verkle-core"
+name = "portal-verkle"
 version = "0.1.0"
 edition = "2021"
-description = "The core types and functionality of the Verkle Trie."
+description = "The core types and functionality of the Verkle Trie for the Portal Network."
 license = "MIT"
 keywords = ["ethereum", "portal-network", "verkle"]
 
@@ -23,3 +23,4 @@ ssz_types = "0.6"
 
 [dev-dependencies]
 anyhow = "1"
+rstest = "0.21"

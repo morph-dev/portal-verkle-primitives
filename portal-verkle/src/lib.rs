@@ -6,7 +6,9 @@ pub mod constants;
 
 mod ec;
 pub mod msm;
+pub mod nodes;
 pub mod proof;
+pub mod ssz;
 mod stem;
 pub mod storage;
 mod trie_key;

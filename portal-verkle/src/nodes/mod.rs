@@ -1,8 +1,12 @@
 use alloy_primitives::B256;
 use ssz_derive::{Decode, Encode};
-use verkle_core::{constants::PORTAL_NETWORK_NODE_WIDTH, Point, Stem, TrieValue};
 
-use super::{sparse_vector::SparseVector, BundleProof, TriePath, TrieProof};
+use crate::{
+    constants::PORTAL_NETWORK_NODE_WIDTH,
+    proof::BundleProof,
+    ssz::{SparseVector, TriePath, TrieProof},
+    Point, Stem, TrieValue,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub struct BranchBundleNode {

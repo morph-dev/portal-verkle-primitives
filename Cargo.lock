@@ -799,13 +799,12 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.2"
+version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47de7e88bbbd467951ae7f5a6f34f70d1b4d9cfce53d5fd70f74ebe118b3db56"
+checksum = "324c74f2155653c90b04f25b2a47a8a631360cb908f92a772695f430c7e31052"
 dependencies = [
  "jobserver",
  "libc",
- "once_cell",
 ]
 
 [[package]]
@@ -1471,7 +1470,7 @@ dependencies = [
  "lazy_static",
  "nanotemplate",
  "once_cell",
- "portal-verkle-trie 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
+ "portal-verkle-trie",
  "quickcheck",
  "rand",
  "reth-rpc-types",
@@ -1493,7 +1492,7 @@ dependencies = [
  "ureq",
  "url",
  "validator",
- "verkle-core 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
+ "verkle-core",
 ]
 
 [[package]]
@@ -2859,7 +2858,7 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.5.2",
+ "redox_syscall 0.5.3",
  "smallvec",
  "windows-targets 0.52.6",
 ]
@@ -2948,7 +2947,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "portal-bridge"
+name = "portal-verkle"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "anyhow",
+ "ark-ec",
+ "ark-ed-on-bls12-381-bandersnatch",
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
+ "banderwagon",
+ "derive_more",
+ "ethereum_ssz",
+ "ethereum_ssz_derive",
+ "once_cell",
+ "rstest",
+ "serde",
+ "sha2",
+ "ssz_types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "portal-verkle-bridge"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
@@ -2957,7 +2977,7 @@ dependencies = [
  "derive_more",
  "ethportal-api",
  "jsonrpsee",
- "portal-verkle-trie 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
+ "portal-verkle-trie",
  "reqwest",
  "serde",
  "serde_json",
@@ -2965,22 +2985,7 @@ dependencies = [
  "ssz_types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "tokio",
- "verkle-core 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
-]
-
-[[package]]
-name = "portal-verkle-trie"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "derive_more",
- "ethereum_ssz",
- "ethereum_ssz_derive",
- "once_cell",
- "rstest",
- "sha2",
- "ssz_types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "verkle-core 0.1.0",
+ "verkle-core",
 ]
 
 [[package]]
@@ -2995,7 +3000,7 @@ dependencies = [
  "once_cell",
  "sha2",
  "ssz_types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "verkle-core 0.1.0 (git+https://github.com/morph-dev/portal-verkle.git?rev=a65e04cf6f2ae02b06884888054540d79816caa7)",
+ "verkle-core",
 ]
 
 [[package]]
@@ -3197,9 +3202,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c82cf8cff14456045f55ec4241383baeff27af886adb72ffb2162f99911de0fd"
+checksum = "2a908a6e00f1fdd0dfd9c0eb08ce85126f6d8bbda50017e74bc4a4b7d4a926a4"
 dependencies = [
  "bitflags 2.6.0",
 ]
@@ -3632,9 +3637,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "2.11.0"
+version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c627723fd09706bacdb5cf41499e95098555af3c3c29d014dc3c458ef6be11c0"
+checksum = "897b2245f0b511c87893af39b033e5ca9cce68824c4d7e7630b5a1d339658d02"
 dependencies = [
  "bitflags 2.6.0",
  "core-foundation",
@@ -3645,9 +3650,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework-sys"
-version = "2.11.0"
+version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "317936bbbd05227752583946b9e66d7ce3b489f84e11a94a510b4437fef407d7"
+checksum = "75da29fe9b9b08fe9d6b22b5b4bcbc75d8db3aa31e639aa56bb62e9d46bfceaf"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -3749,9 +3754,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "3.8.3"
+version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e73139bc5ec2d45e6c5fd85be5a46949c1c39a4c18e56915f5eb4c12f975e377"
+checksum = "69cecfa94848272156ea67b2b1a53f20fc7bc638c4a46d2f8abde08f05f4b857"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -3767,9 +3772,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with_macros"
-version = "3.8.3"
+version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b80d3d6b56b64335c0180e5ffde23b3c5e08c14c585b51a15bd0e95393f46703"
+checksum = "a8fee4991ef4f274617a51ad4af30519438dacb2f56ac773b08a1922ff743350"
 dependencies = [
  "darling 0.20.10",
  "proc-macro2",
@@ -4616,26 +4621,6 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
-
-[[package]]
-name = "verkle-core"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "anyhow",
- "ark-ec",
- "ark-ed-on-bls12-381-bandersnatch",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "banderwagon",
- "derive_more",
- "ethereum_ssz",
- "ethereum_ssz_derive",
- "once_cell",
- "serde",
- "sha2",
- "ssz_types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "verkle-core"

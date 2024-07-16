@@ -10,7 +10,7 @@ use ethportal_api::{
     VerkleNetworkApiClient,
 };
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use portal_bridge::{
+use portal_verkle_bridge::{
     beacon_block_fetcher::BeaconBlockFetcher,
     evm::VerkleEvm,
     types::{genesis::GenesisConfig, state_write::StateWrites},
