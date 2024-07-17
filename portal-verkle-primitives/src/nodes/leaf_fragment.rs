@@ -1,4 +1,4 @@
-use std::cell::OnceCell;
+use std::sync::OnceLock;
 
 use alloy_primitives::B256;
 use ssz_derive::{Decode, Encode};
@@ -42,7 +42,7 @@ pub struct LeafFragmentNode {
     fragment_index: u8,
     children: SparseVector<TrieValue, PORTAL_NETWORK_NODE_WIDTH>,
     #[ssz(skip_serializing, skip_deserializing)]
-    commitment: OnceCell<Point>,
+    commitment: OnceLock<Point>,
 }
 
 impl LeafFragmentNode {
