@@ -1,3 +1,4 @@
+use alloy_primitives::B256;
 use ssz_derive::{Decode, Encode};
 
 use crate::Point;
@@ -53,6 +54,15 @@ impl PortalVerkleNodeWithProof {
             Self::BranchFragment(node_with_proof) => node_with_proof.node.commitment(),
             Self::LeafBundle(node_with_proof) => node_with_proof.node.commitment(),
             Self::LeafFragment(node_with_proof) => node_with_proof.node.commitment(),
+        }
+    }
+
+    pub fn block_hash(&self) -> B256 {
+        match &self {
+            Self::BranchBundle(node_with_proof) => node_with_proof.block_hash,
+            Self::BranchFragment(node_with_proof) => node_with_proof.block_hash,
+            Self::LeafBundle(node_with_proof) => node_with_proof.block_hash,
+            Self::LeafFragment(node_with_proof) => node_with_proof.block_hash,
         }
     }
 
