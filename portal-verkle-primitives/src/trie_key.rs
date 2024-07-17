@@ -1,4 +1,4 @@
-use alloy_primitives::wrap_fixed_bytes;
+use alloy_primitives::{bytes, wrap_fixed_bytes};
 
 use crate::Stem;
 

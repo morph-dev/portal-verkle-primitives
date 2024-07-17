@@ -1,4 +1,4 @@
-use alloy_primitives::{wrap_fixed_bytes, U256};
+use alloy_primitives::{bytes, wrap_fixed_bytes, U256};
 
 use crate::ScalarField;
 

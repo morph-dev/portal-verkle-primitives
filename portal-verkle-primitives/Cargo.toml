@@ -7,7 +7,7 @@ license = "MIT"
 keywords = ["ethereum", "portal-network", "verkle"]
 
 [dependencies]
-alloy-primitives = { version = "0.7", features = ["serde", "ssz", "rand"] }
+alloy-primitives = { version = "0.7", features = ["serde", "ssz", "rlp"] }
 ark-ec = "0.4"
 ark-ed-on-bls12-381-bandersnatch = "0.4"
 ark-ff = "0.4"
