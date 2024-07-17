@@ -5,6 +5,7 @@ use crate::Point;
 use super::{
     BranchBundleNode, BranchBundleNodeWithProof, BranchFragmentNode, BranchFragmentNodeWithProof,
     LeafBundleNode, LeafBundleNodeWithProof, LeafFragmentNode, LeafFragmentNodeWithProof,
+    NodeVerificationError,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
@@ -23,6 +24,15 @@ impl PortalVerkleNode {
             Self::BranchFragment(node) => node.commitment(),
             Self::LeafBundle(node) => node.commitment(),
             Self::LeafFragment(node) => node.commitment(),
+        }
+    }
+
+    pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
+        match &self {
+            Self::BranchBundle(node) => node.verify(commitment),
+            Self::BranchFragment(node) => node.verify(commitment),
+            Self::LeafBundle(node) => node.verify(commitment),
+            Self::LeafFragment(node) => node.verify(commitment),
         }
     }
 }
