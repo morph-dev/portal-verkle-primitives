@@ -41,6 +41,17 @@ pub struct BranchFragmentNode {
 }
 
 impl BranchFragmentNode {
+    pub fn new(
+        fragment_index: u8,
+        children: SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH>,
+    ) -> Self {
+        Self {
+            fragment_index,
+            children,
+            commitment: OnceLock::new(),
+        }
+    }
+
     pub fn fragment_index(&self) -> usize {
         self.fragment_index as usize
     }

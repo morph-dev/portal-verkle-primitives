@@ -1,11 +1,13 @@
-use derive_more::Deref;
+use derive_more::{AsRef, Constructor, Deref};
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
 use ssz_types::{typenum, FixedVector};
 
 use crate::{Point, ScalarField};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode, Deref)]
+#[derive(
+    Constructor, AsRef, Deref, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode,
+)]
 #[serde(transparent)]
 #[ssz(struct_behaviour = "transparent")]
 pub struct BundleProof(MultiPointProof);

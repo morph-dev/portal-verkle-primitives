@@ -41,6 +41,17 @@ pub struct BranchBundleNode {
 }
 
 impl BranchBundleNode {
+    pub fn new(
+        fragments: SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH>,
+        bundle_proof: BundleProof,
+    ) -> Self {
+        Self {
+            fragments,
+            bundle_proof,
+            commitment: OnceLock::new(),
+        }
+    }
+
     pub fn fragments(&self) -> &SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH> {
         &self.fragments
     }

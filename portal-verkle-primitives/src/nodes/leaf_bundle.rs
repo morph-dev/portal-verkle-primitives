@@ -45,6 +45,21 @@ pub struct LeafBundleNode {
 }
 
 impl LeafBundleNode {
+    pub fn new(
+        marker: u64,
+        stem: Stem,
+        fragments: SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH>,
+        bundle_proof: BundleProof,
+    ) -> Self {
+        Self {
+            marker,
+            stem,
+            fragments,
+            bundle_proof,
+            commitment: OnceLock::new(),
+        }
+    }
+
     pub fn marker(&self) -> u64 {
         self.marker
     }
