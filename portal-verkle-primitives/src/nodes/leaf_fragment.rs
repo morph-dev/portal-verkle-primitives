@@ -65,10 +65,13 @@ impl LeafFragmentNode {
 
     pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
         if commitment != self.commitment() {
-            return Err(NodeVerificationError::new_wrong_commitment(
+            return Err(NodeVerificationError::wrong_commitment(
                 commitment,
                 self.commitment(),
             ));
+        }
+        if self.commitment().is_zero() {
+            return Err(NodeVerificationError::ZeroCommitment);
         }
         Ok(())
     }

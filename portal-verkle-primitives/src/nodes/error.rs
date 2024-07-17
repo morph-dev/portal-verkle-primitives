@@ -10,12 +10,21 @@ pub enum NodeVerificationError {
         actual: Box<Point>,
     },
 
+    #[error("Commitment is zero")]
+    ZeroCommitment,
+
+    #[error("Bundle node doesn't have fragments")]
+    NoFragments,
+
+    #[error("Child's value is zero")]
+    ZeroChild,
+
     #[error("Bundle proof is invalid")]
     InvalidBundleProof,
 }
 
 impl NodeVerificationError {
-    pub fn new_wrong_commitment(expected: &Point, actual: &Point) -> Self {
+    pub fn wrong_commitment(expected: &Point, actual: &Point) -> Self {
         Self::WrongCommitment {
             expected: expected.clone().into(),
             actual: actual.clone().into(),

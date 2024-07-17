@@ -61,10 +61,19 @@ impl BranchBundleNode {
 
     pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
         if commitment != self.commitment() {
-            return Err(NodeVerificationError::new_wrong_commitment(
+            return Err(NodeVerificationError::wrong_commitment(
                 commitment,
                 self.commitment(),
             ));
+        }
+        if self.commitment().is_zero() {
+            return Err(NodeVerificationError::ZeroCommitment);
+        }
+        if self.fragments.len() == 0 {
+            return Err(NodeVerificationError::NoFragments);
+        }
+        if self.fragments.iter_set_items().any(|c| c.is_zero()) {
+            return Err(NodeVerificationError::ZeroChild);
         }
         self.verify_bundle_proof()?;
         Ok(())

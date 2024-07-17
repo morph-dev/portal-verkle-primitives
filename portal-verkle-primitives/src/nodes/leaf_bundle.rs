@@ -63,16 +63,15 @@ impl LeafBundleNode {
 
     pub fn commitment(&self) -> &Point {
         self.commitment.get_or_init(|| {
-            let (c1, c2) = self.fragments.iter_enumerated_set_items().fold(
-                (Point::zero(), Point::zero()),
-                |(c1, c2), (index, child)| {
-                    if index < PORTAL_NETWORK_NODE_WIDTH / 2 {
-                        (c1 + child, c2)
-                    } else {
-                        (c1, c2 + child)
-                    }
-                },
-            );
+            let (first_half, second_half) = self.fragments.split_at(PORTAL_NETWORK_NODE_WIDTH / 2);
+            let sum_of_optional_points = |fragments: &[Option<Point>]| {
+                fragments
+                    .iter()
+                    .flat_map(|fragment| fragment.as_ref())
+                    .sum::<Point>()
+            };
+            let c1 = sum_of_optional_points(first_half);
+            let c2 = sum_of_optional_points(second_half);
             DefaultMsm.commit_sparse(&[
                 (LEAF_MARKER_INDEX, ScalarField::from(self.marker)),
                 (LEAF_STEM_INDEX, ScalarField::from(&self.stem)),
@@ -89,10 +88,19 @@ impl LeafBundleNode {
 
     pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
         if commitment != self.commitment() {
-            return Err(NodeVerificationError::new_wrong_commitment(
+            return Err(NodeVerificationError::wrong_commitment(
                 commitment,
                 self.commitment(),
             ));
+        }
+        if self.commitment().is_zero() {
+            return Err(NodeVerificationError::ZeroCommitment);
+        }
+        if self.fragments.len() == 0 {
+            return Err(NodeVerificationError::NoFragments);
+        }
+        if self.fragments.iter_set_items().any(|c| c.is_zero()) {
+            return Err(NodeVerificationError::ZeroChild);
         }
         self.verify_bundle_proof()?;
         Ok(())
