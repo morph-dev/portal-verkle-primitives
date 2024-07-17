@@ -28,13 +28,8 @@ impl LeafBundleNodeWithProof {
         commitment: &Point,
         _state_root: &B256,
     ) -> Result<(), NodeVerificationError> {
-        if commitment != self.node.commitment() {
-            return Err(NodeVerificationError::new_wrong_commitment(
-                commitment,
-                self.node.commitment(),
-            ));
-        }
-        // TODO: add implementataion
+        self.node.verify(commitment)?;
+        // TODO: verify trie proof
         Ok(())
     }
 }
@@ -66,11 +61,6 @@ impl LeafBundleNode {
         &self.bundle_proof
     }
 
-    pub fn verify_bundle_proof(&self) -> Result<(), NodeVerificationError> {
-        // TODO: add implementataion
-        Ok(())
-    }
-
     pub fn commitment(&self) -> &Point {
         self.commitment.get_or_init(|| {
             let (c1, c2) = self.fragments.iter_enumerated_set_items().fold(
@@ -90,5 +80,21 @@ impl LeafBundleNode {
                 (LEAF_C2_INDEX, c2.map_to_scalar_field()),
             ])
         })
+    }
+
+    pub fn verify_bundle_proof(&self) -> Result<(), NodeVerificationError> {
+        // TODO: add implementataion
+        Ok(())
+    }
+
+    pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
+        if commitment != self.commitment() {
+            return Err(NodeVerificationError::new_wrong_commitment(
+                commitment,
+                self.commitment(),
+            ));
+        }
+        self.verify_bundle_proof()?;
+        Ok(())
     }
 }

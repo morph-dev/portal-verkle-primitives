@@ -26,13 +26,8 @@ impl BranchBundleNodeWithProof {
         commitment: &Point,
         _state_root: &B256,
     ) -> Result<(), NodeVerificationError> {
-        if commitment != self.node.commitment() {
-            return Err(NodeVerificationError::new_wrong_commitment(
-                commitment,
-                self.node.commitment(),
-            ));
-        }
-        // TODO: add implementataion
+        self.node.verify(commitment)?;
+        // TODO: verify trie proof
         Ok(())
     }
 }
@@ -54,13 +49,24 @@ impl BranchBundleNode {
         &self.bundle_proof
     }
 
+    pub fn commitment(&self) -> &Point {
+        self.commitment
+            .get_or_init(|| self.fragments.iter_set_items().sum())
+    }
+
     pub fn verify_bundle_proof(&self) -> Result<(), NodeVerificationError> {
         // TODO: add implementataion
         Ok(())
     }
 
-    pub fn commitment(&self) -> &Point {
-        self.commitment
-            .get_or_init(|| self.fragments.iter_set_items().sum())
+    pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
+        if commitment != self.commitment() {
+            return Err(NodeVerificationError::new_wrong_commitment(
+                commitment,
+                self.commitment(),
+            ));
+        }
+        self.verify_bundle_proof()?;
+        Ok(())
     }
 }

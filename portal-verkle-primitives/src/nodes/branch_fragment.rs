@@ -26,13 +26,8 @@ impl BranchFragmentNodeWithProof {
         commitment: &Point,
         _state_root: &B256,
     ) -> Result<(), NodeVerificationError> {
-        if commitment != self.node.commitment() {
-            return Err(NodeVerificationError::new_wrong_commitment(
-                commitment,
-                self.node.commitment(),
-            ));
-        }
-        // TODO: add implementataion
+        self.node.verify(commitment)?;
+        // TODO: verify trie proof
         Ok(())
     }
 }
@@ -64,5 +59,15 @@ impl BranchFragmentNode {
                 })
                 .sum()
         })
+    }
+
+    pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
+        if commitment != self.commitment() {
+            return Err(NodeVerificationError::new_wrong_commitment(
+                commitment,
+                self.commitment(),
+            ));
+        }
+        Ok(())
     }
 }
