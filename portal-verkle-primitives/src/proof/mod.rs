@@ -5,6 +5,8 @@ use ssz_types::{typenum, FixedVector};
 
 use crate::{Point, ScalarField};
 
+pub mod transcript;
+
 #[derive(
     Constructor, AsRef, Deref, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode,
 )]

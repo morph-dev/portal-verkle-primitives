@@ -13,9 +13,17 @@ use ssz::{Decode, Encode};
 use crate::ScalarField;
 
 #[derive(Clone, PartialEq, Eq, Constructor, From, Into, Deref, Add, AddAssign, Sum)]
-pub struct Point(pub(crate) Element);
+pub struct Point(Element);
 
 impl Point {
+    pub fn prime_subgroup_generator() -> Self {
+        Self(Element::prime_subgroup_generator())
+    }
+
+    pub(crate) fn element(&self) -> Element {
+        self.0
+    }
+
     pub fn map_to_scalar_field(&self) -> ScalarField {
         self.0.map_to_scalar_field().into()
     }

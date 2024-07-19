@@ -10,7 +10,7 @@ static PRECOMP_WNAF_WINDOW_SIZE: usize = 12;
 /// Precomputed wNAF (w-ary non-adjacent form) tables for efficient scalar multiplication.
 static WNAF_PRECOMP: Lazy<MSMPrecompWnaf> = Lazy::new(|| {
     MSMPrecompWnaf::new(
-        &CRS.each_ref().map(|point| point.0),
+        &CRS.each_ref().map(|point| point.element()),
         PRECOMP_WNAF_WINDOW_SIZE,
     )
 });
