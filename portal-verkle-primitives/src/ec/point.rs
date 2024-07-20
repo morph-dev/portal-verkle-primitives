@@ -1,18 +1,15 @@
-use std::{
-    fmt::Debug,
-    iter::Sum,
-    ops::{Add, Sub},
-};
+use std::{fmt::Debug, iter::Sum, ops};
 
 use alloy_primitives::B256;
 use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Element};
-use derive_more::{Add, AddAssign, Constructor, Deref, From, Into, Sum};
+use derive_more::{Constructor, Deref, From, Into};
+use overload::overload;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz::{Decode, Encode};
 
 use crate::ScalarField;
 
-#[derive(Clone, PartialEq, Eq, Constructor, From, Into, Deref, Add, AddAssign, Sum)]
+#[derive(Clone, PartialEq, Eq, Constructor, From, Into, Deref)]
 pub struct Point(Element);
 
 impl Point {
@@ -110,19 +107,21 @@ impl Debug for Point {
     }
 }
 
-impl Add<&Self> for Point {
-    type Output = Self;
+overload!(- (me: ?Point) -> Point { Point(-me.0) });
 
-    fn add(self, rhs: &Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
+overload!((lhs: &mut Point) += (rhs: ?Point) { lhs.0 += rhs.0 });
+overload!((lhs: Point) + (rhs: ?Point) -> Point {
+    let mut lhs = lhs; lhs += rhs; lhs
+});
 
-impl Sub<&Self> for Point {
-    type Output = Self;
+overload!((lhs: &mut Point) -= (rhs: ?Point) { lhs.0 = lhs.0 - rhs.0 });
+overload!((lhs: Point) - (rhs: ?Point) -> Point {
+    let mut lhs = lhs; lhs -= rhs; lhs
+});
 
-    fn sub(self, rhs: &Self) -> Self::Output {
-        Self(self.0 - rhs.0)
+impl Sum for Point {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |sum, item| sum + item)
     }
 }
 

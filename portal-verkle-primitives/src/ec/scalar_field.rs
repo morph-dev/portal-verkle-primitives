@@ -1,14 +1,20 @@
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    iter::{Product, Sum},
+    ops,
+};
 
 use alloy_primitives::B256;
-use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Fr, PrimeField, Zero};
-use derive_more::{Add, Constructor, Deref, From, Into, Neg, Sub};
+use ark_ff::batch_inversion_and_mul;
+use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Field, Fr, One, PrimeField, Zero};
+use derive_more::{Constructor, Deref, From, Into};
+use overload::overload;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz::{Decode, Encode};
 
 use crate::Stem;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Constructor, From, Into, Deref, Neg, Add, Sub)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Constructor, From, Into, Deref)]
 pub struct ScalarField(pub(crate) Fr);
 
 impl ScalarField {
@@ -36,6 +42,32 @@ impl ScalarField {
 
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
+    }
+
+    pub fn one() -> Self {
+        Self(Fr::one())
+    }
+
+    pub fn inverse(&self) -> Option<Self> {
+        self.0.inverse().map(Self)
+    }
+
+    /// Calculates inverse of all provided scalars, ignoring the ones with value zero.
+    pub fn batch_inversion(scalars: &mut [Self]) {
+        Self::batch_inverse_and_multiply(scalars, &Self::one())
+    }
+
+    /// Calculates inverses and multiplies them.
+    ///
+    /// Updates variable `values`: `v_i` => `m / v_i`.
+    ///
+    /// Ignores the zero values.
+    pub fn batch_inverse_and_multiply(values: &mut [Self], m: &Self) {
+        let mut frs = values.iter().map(|value| value.0).collect::<Vec<_>>();
+        batch_inversion_and_mul(&mut frs, m);
+        for (value, fr) in values.iter_mut().zip(frs.into_iter()) {
+            value.0 = fr;
+        }
     }
 }
 
@@ -115,5 +147,83 @@ impl Decode for ScalarField {
 impl Debug for ScalarField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         B256::from(self).fmt(f)
+    }
+}
+
+overload!(- (me: ?ScalarField) -> ScalarField { ScalarField(-me.0) });
+
+overload!((lhs: &mut ScalarField) += (rhs: ?ScalarField) { lhs.0 += &rhs.0; });
+overload!((lhs: ScalarField) + (rhs: ?ScalarField) -> ScalarField {
+    let mut lhs = lhs; lhs += rhs; lhs
+});
+overload!((lhs: &ScalarField) + (rhs: ?ScalarField) -> ScalarField { ScalarField(lhs.0) + rhs });
+
+overload!((lhs: &mut ScalarField) -= (rhs: ?ScalarField) { lhs.0 -= &rhs.0; });
+overload!((lhs: ScalarField) - (rhs: ?ScalarField) -> ScalarField {
+    let mut lhs = lhs; lhs -= rhs; lhs
+});
+overload!((lhs: &ScalarField) - (rhs: ?ScalarField) -> ScalarField { ScalarField(lhs.0) - rhs });
+
+overload!((lhs: &mut ScalarField) *= (rhs: ?ScalarField) { lhs.0 *= &rhs.0; });
+overload!((lhs: ScalarField) * (rhs: ?ScalarField) -> ScalarField {
+    let mut lhs = lhs; lhs *= rhs; lhs
+});
+overload!((lhs: &ScalarField) * (rhs: ?ScalarField) -> ScalarField { ScalarField(lhs.0) * rhs });
+
+impl<'a> Sum<&'a Self> for ScalarField {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(ScalarField::zero(), |sum, item| sum + item)
+    }
+}
+
+impl Sum for ScalarField {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(ScalarField::zero(), |sum, item| sum + item)
+    }
+}
+
+impl<'a> Product<&'a Self> for ScalarField {
+    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(ScalarField::one(), |prod, item| prod * item)
+    }
+}
+
+impl Product for ScalarField {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(ScalarField::one(), |prod, item| prod * item)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn batch_inversion_and_multiplication() {
+        let mut values = vec![
+            ScalarField::from(1),
+            ScalarField::from(10),
+            ScalarField::from(123),
+            ScalarField::from(0),
+            ScalarField::from(1_000_000),
+            ScalarField::from(1 << 30),
+            ScalarField::from(1 << 60),
+        ];
+        let m = ScalarField::from(42);
+
+        let expected = values
+            .iter()
+            .map(|v| {
+                if v.is_zero() {
+                    v.clone()
+                } else {
+                    &m * v.inverse().unwrap()
+                }
+            })
+            .collect::<Vec<_>>();
+
+        ScalarField::batch_inverse_and_multiply(&mut values, &m);
+
+        assert_eq!(expected, values);
     }
 }

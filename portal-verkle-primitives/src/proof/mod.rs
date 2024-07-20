@@ -5,6 +5,8 @@ use ssz_types::{typenum, FixedVector};
 
 use crate::{Point, ScalarField};
 
+pub mod lagrange_basis;
+pub mod precomputed_weights;
 pub mod transcript;
 
 #[derive(
