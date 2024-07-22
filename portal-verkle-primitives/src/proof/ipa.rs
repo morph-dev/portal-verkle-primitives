@@ -184,3 +184,40 @@ impl IpaProof {
         result.is_zero()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn const_polynomial() {
+        let x = ScalarField::from(1234u64);
+        let y = ScalarField::from(42u64);
+        let poly = LagrangeBasis::new_const(&y);
+        let c = poly.commit();
+        let mut transcript = Transcript::new("test");
+        let proof = IpaProof::open_polynomial(Some(c.clone()), poly, x.clone(), &mut transcript);
+
+        let mut transcript = Transcript::new("test");
+        assert!(proof.verify_polynomial(c, x, y, &mut transcript))
+    }
+
+    #[test]
+    fn simple_polynomial() {
+        // poly = (x+1)(x+10)(x-100)
+        let eval = |x: &ScalarField| {
+            (x + ScalarField::from(1u64))
+                * (x + ScalarField::from(10u64))
+                * (x - ScalarField::from(100u64))
+        };
+        let x = ScalarField::from(1234u64);
+        let y = eval(&x);
+        let poly = LagrangeBasis::new(array::from_fn(|i| eval(&ScalarField::from(i))));
+        let c = poly.commit();
+        let mut transcript = Transcript::new("test");
+        let proof = IpaProof::open_polynomial(Some(c.clone()), poly, x.clone(), &mut transcript);
+
+        let mut transcript = Transcript::new("test");
+        assert!(proof.verify_polynomial(c, x, y, &mut transcript))
+    }
+}
