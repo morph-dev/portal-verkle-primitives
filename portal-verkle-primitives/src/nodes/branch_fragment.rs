@@ -5,9 +5,8 @@ use ssz_derive::{Decode, Encode};
 
 use crate::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
-    msm::{DefaultMsm, MultiScalarMultiplicator},
     ssz::{SparseVector, TriePath, TrieProof},
-    Point,
+    Point, CRS,
 };
 
 use super::NodeVerificationError;
@@ -66,7 +65,7 @@ impl BranchFragmentNode {
                 .iter_enumerated_set_items()
                 .map(|(child_index, child)| {
                     let index = child_index + self.fragment_index() * PORTAL_NETWORK_NODE_WIDTH;
-                    DefaultMsm.scalar_mul(index, child.map_to_scalar_field())
+                    CRS::commit_single(index, child.map_to_scalar_field())
                 })
                 .sum()
         })

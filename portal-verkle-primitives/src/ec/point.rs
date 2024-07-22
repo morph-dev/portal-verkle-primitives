@@ -2,27 +2,27 @@ use std::{fmt::Debug, iter::Sum, ops};
 
 use alloy_primitives::B256;
 use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Element};
-use derive_more::{Constructor, Deref, From, Into};
+use derive_more::Constructor;
 use overload::overload;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz::{Decode, Encode};
 
 use crate::ScalarField;
 
-#[derive(Clone, PartialEq, Eq, Constructor, From, Into, Deref)]
+#[derive(Clone, PartialEq, Eq, Constructor)]
 pub struct Point(Element);
 
 impl Point {
+    pub(crate) fn inner(&self) -> Element {
+        self.0
+    }
+
     pub fn prime_subgroup_generator() -> Self {
         Self(Element::prime_subgroup_generator())
     }
 
-    pub(crate) fn element(&self) -> Element {
-        self.0
-    }
-
     pub fn map_to_scalar_field(&self) -> ScalarField {
-        self.0.map_to_scalar_field().into()
+        ScalarField::new(self.0.map_to_scalar_field())
     }
 
     pub fn zero() -> Self {
@@ -31,6 +31,19 @@ impl Point {
 
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
+    }
+
+    pub fn mul(&self, scalar: &ScalarField) -> Self {
+        Self(self.0 * scalar.inner())
+    }
+
+    pub fn multi_scalar_mul<'a, 'b>(
+        points: impl IntoIterator<Item = &'a Self>,
+        scalars: impl IntoIterator<Item = &'b ScalarField>,
+    ) -> Self {
+        let points = points.into_iter().map(|p| p.inner()).collect::<Vec<_>>();
+        let scalars = scalars.into_iter().map(|s| s.inner()).collect::<Vec<_>>();
+        Self(banderwagon::multi_scalar_mul(&points, &scalars))
     }
 }
 
@@ -47,6 +60,7 @@ impl From<&Point> for B256 {
     fn from(ec_point: &Point) -> Self {
         let mut result = B256::ZERO;
         ec_point
+            .0
             .serialize_compressed(result.as_mut_slice())
             .expect("EllipticCurvePoint should serialize to B256");
         result
@@ -75,12 +89,13 @@ impl Encode for Point {
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
-        self.serialize_compressed(buf)
+        self.0
+            .serialize_compressed(buf)
             .expect("EllipticCurvePoint should serialize");
     }
 
     fn ssz_bytes_len(&self) -> usize {
-        self.compressed_size()
+        self.0.compressed_size()
     }
 }
 
@@ -121,7 +136,7 @@ overload!((lhs: Point) - (rhs: ?Point) -> Point {
 
 impl Sum for Point {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::zero(), |sum, item| sum + item)
+        iter.reduce(|a, b| a + b).unwrap_or_else(Self::zero)
     }
 }
 

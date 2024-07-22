@@ -21,6 +21,7 @@ impl Transcript {
     pub fn append_point(&mut self, label: &str, point: &Point) {
         self.hasher.update(label);
         point
+            .inner()
             .serialize_compressed(&mut self.hasher)
             .expect("Point should serialize to hasher");
     }
@@ -28,6 +29,7 @@ impl Transcript {
     pub fn append_scalar(&mut self, label: &str, scalar: &ScalarField) {
         self.hasher.update(label);
         scalar
+            .inner()
             .serialize_compressed(&mut self.hasher)
             .expect("Scalar should serialize to hasher");
     }
@@ -71,7 +73,7 @@ mod tests {
     #[test]
     fn test_vector_2() {
         let mut transcript = Transcript::new("simple_protocol");
-        let five = ScalarField::from(5_u64);
+        let five = ScalarField::from(5u64);
 
         transcript.append_scalar("five", &five);
         transcript.append_scalar("five again", &five);
@@ -86,7 +88,7 @@ mod tests {
     #[test]
     fn test_vector_3() {
         let mut transcript = Transcript::new("simple_protocol");
-        let one = ScalarField::from(1_u64);
+        let one = ScalarField::from(1u64);
         let minus_one = -one.clone();
 
         transcript.append_scalar("-1", &minus_one);

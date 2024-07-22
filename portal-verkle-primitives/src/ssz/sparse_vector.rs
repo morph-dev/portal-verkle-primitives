@@ -1,6 +1,7 @@
 use std::array;
 
 use derive_more::{Constructor, Deref, Index, IndexMut};
+use itertools::zip_eq;
 use ssz::{Decode, Encode, BYTES_PER_LENGTH_OFFSET};
 
 #[derive(Debug, Clone, PartialEq, Eq, Constructor, Index, IndexMut, Deref)]
@@ -113,7 +114,7 @@ impl<T: Decode, const N: usize> Decode for SparseVector<T, N> {
         }
 
         let mut sparse_vector = Self::default();
-        for (i, item) in set_indices.into_iter().zip(items) {
+        for (i, item) in zip_eq(set_indices, items) {
             sparse_vector[i] = Some(item);
         }
         Ok(sparse_vector)

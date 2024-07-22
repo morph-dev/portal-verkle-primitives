@@ -1,12 +1,9 @@
-use std::{array, ops};
+use std::{array, iter::Sum, ops};
 
+use itertools::Itertools;
 use overload::overload;
 
-use crate::{
-    constants::VERKLE_NODE_WIDTH,
-    msm::{DefaultMsm, MultiScalarMultiplicator},
-    Point, ScalarField,
-};
+use crate::{constants::VERKLE_NODE_WIDTH, DotProduct, Point, ScalarField, CRS};
 
 use super::precomputed_weights::PrecomputedWeights;
 
@@ -42,14 +39,33 @@ impl LagrangeBasis {
         Self { y: values }
     }
 
+    pub fn new_const(value: &ScalarField) -> Self {
+        Self::new(array::from_fn(|_| value.clone()))
+    }
+
     pub fn zero() -> Self {
-        Self {
-            y: array::from_fn(|_| ScalarField::zero()),
-        }
+        Self::new_const(&ScalarField::zero())
     }
 
     pub fn commit(&self) -> Point {
-        DefaultMsm.commit_lagrange(&self.y)
+        CRS::commit(&self.y)
+    }
+
+    /// Returns evaluations on the domain
+    pub fn evaluations(&self) -> &[ScalarField; VERKLE_NODE_WIDTH] {
+        &self.y
+    }
+
+    /// Calculates `P(z)` for `z` in domain
+    pub fn evaluate_in_domain(&self, z: usize) -> &ScalarField {
+        &self.y[z]
+    }
+
+    /// Calculates `P(z)` for `z` outside domain
+    pub fn evaluate_outside_domain(&self, z: &ScalarField) -> ScalarField {
+        // Lagrange polinomials: L_i(z)
+        let l = PrecomputedWeights::evaluate_lagrange_polynomials(z);
+        ScalarField::dot_product(l, &self.y)
     }
 
     /// Divides the polynomial `P(x)-P(k)` with `x-k`, where `k` is in domain.
@@ -84,18 +100,6 @@ impl LagrangeBasis {
 
         Self::new(q)
     }
-
-    /// Calculates `P(k)` for `k` in domain
-    pub fn evaluate_in_domain(&self, k: usize) -> &ScalarField {
-        &self.y[k]
-    }
-
-    /// Calculates `P(z)` for `z` outside domain
-    pub fn evaluate_outside_domain(&self, z: &ScalarField) -> ScalarField {
-        // Lagrange polinomials: L_i(z)
-        let l = PrecomputedWeights::evaluate_lagrange_polynomials(z);
-        l.into_iter().zip(&self.y).map(|(l_i, y_i)| l_i * y_i).sum()
-    }
 }
 
 impl From<&[ScalarField]> for LagrangeBasis {
@@ -108,14 +112,14 @@ impl From<&[ScalarField]> for LagrangeBasis {
 }
 
 overload!((lhs: &mut LagrangeBasis) += (rhs: ?LagrangeBasis) {
-    lhs.y.iter_mut().zip(&rhs.y).for_each(|(lhs, rhs)| *lhs += rhs)
+    lhs.y.iter_mut().zip_eq(&rhs.y).for_each(|(lhs, rhs)| *lhs += rhs)
 });
 overload!((lhs: LagrangeBasis) + (rhs: ?LagrangeBasis) -> LagrangeBasis {
     let mut lhs = lhs; lhs += rhs; lhs
 });
 
 overload!((lhs: &mut LagrangeBasis) -= (rhs: ?LagrangeBasis) {
-    lhs.y.iter_mut().zip(&rhs.y).for_each(|(lhs, rhs)| *lhs -= rhs)
+    lhs.y.iter_mut().zip_eq(&rhs.y).for_each(|(lhs, rhs)| *lhs -= rhs)
 });
 overload!((lhs: LagrangeBasis) - (rhs: ?LagrangeBasis) -> LagrangeBasis {
     let mut lhs = lhs; lhs -= rhs; lhs
@@ -130,3 +134,15 @@ overload!((lhs: &mut LagrangeBasis) *= (rhs: &ScalarField) {
 overload!((lhs: LagrangeBasis) * (rhs: ?ScalarField) -> LagrangeBasis {
     let mut lhs = lhs; lhs *= rhs; lhs
 });
+
+impl Sum for LagrangeBasis {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|a, b| a + b).unwrap_or_else(Self::zero)
+    }
+}
+
+impl<'a> Sum<&'a LagrangeBasis> for LagrangeBasis {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(LagrangeBasis::zero(), |sum, poly| sum + poly)
+    }
+}

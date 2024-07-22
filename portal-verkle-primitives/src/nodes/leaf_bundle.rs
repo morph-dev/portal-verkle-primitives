@@ -7,10 +7,9 @@ use crate::{
     constants::{
         LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX, PORTAL_NETWORK_NODE_WIDTH,
     },
-    msm::{DefaultMsm, MultiScalarMultiplicator},
     proof::BundleProof,
     ssz::{SparseVector, TrieProof},
-    Point, ScalarField, Stem,
+    Point, ScalarField, Stem, CRS,
 };
 
 use super::NodeVerificationError;
@@ -87,7 +86,7 @@ impl LeafBundleNode {
             };
             let c1 = sum_of_optional_points(first_half);
             let c2 = sum_of_optional_points(second_half);
-            DefaultMsm.commit_sparse(&[
+            CRS::commit_sparse(&[
                 (LEAF_MARKER_INDEX, ScalarField::from(self.marker)),
                 (LEAF_STEM_INDEX, ScalarField::from(&self.stem)),
                 (LEAF_C1_INDEX, c1.map_to_scalar_field()),

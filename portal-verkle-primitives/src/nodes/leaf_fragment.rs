@@ -5,9 +5,8 @@ use ssz_derive::{Decode, Encode};
 
 use crate::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
-    msm::{DefaultMsm, MultiScalarMultiplicator},
     ssz::{SparseVector, TrieProof},
-    Point, Stem, TrieValue,
+    Point, Stem, TrieValue, CRS,
 };
 
 use super::NodeVerificationError;
@@ -67,8 +66,7 @@ impl LeafFragmentNode {
                 .map(|(child_index, child)| {
                     let (low_index, high_index) = self.bases_indices(child_index);
                     let (low_value, high_value) = child.split();
-                    DefaultMsm.scalar_mul(low_index, low_value)
-                        + DefaultMsm.scalar_mul(high_index, high_value)
+                    CRS::commit_sparse(&[(low_index, low_value), (high_index, high_value)])
                 })
                 .sum()
         })

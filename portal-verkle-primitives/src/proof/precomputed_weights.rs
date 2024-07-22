@@ -2,7 +2,7 @@ use std::array;
 
 use once_cell::sync::Lazy;
 
-use crate::{constants::VERKLE_NODE_WIDTH, ScalarField};
+use crate::{constants::VERKLE_NODE_WIDTH, BatchInversion, ScalarField};
 
 /// Precomputed weights for Lagrange polynomial (`L_i`) related calculations.
 ///
@@ -51,15 +51,13 @@ impl PrecomputedWeights {
             // j≠i
             (0..VERKLE_NODE_WIDTH)
                 .filter(|j| i != *j)
-                .map(|j| ScalarField::from(i as u64) - ScalarField::from(j as u64))
+                .map(|j| ScalarField::from(i) - ScalarField::from(j))
                 .product()
         });
 
-        let mut a_prime_inv = a_prime.clone();
-        ScalarField::batch_inversion(&mut a_prime_inv);
+        let a_prime_inv = a_prime.clone().batch_inverse();
 
-        let mut domain_inv = array::from_fn(|i| ScalarField::from(i as u64));
-        ScalarField::batch_inversion(&mut domain_inv);
+        let domain_inv = array::from_fn(ScalarField::from).batch_inverse();
 
         Self {
             a_prime,
@@ -72,7 +70,7 @@ impl PrecomputedWeights {
     ///
     /// `A(z) = ∏ (z - i) = (z-0)(z-1)...(z-d)`
     pub fn evaluate_a(z: &ScalarField) -> ScalarField {
-        (0..VERKLE_NODE_WIDTH as u64)
+        (0..VERKLE_NODE_WIDTH)
             .map(|i| z - ScalarField::from(i))
             .product()
     }
@@ -104,12 +102,10 @@ impl PrecomputedWeights {
         let a_z = Self::evaluate_a(z);
 
         // A'(i) * (z-i)
-        let mut lagrange_evaluations: [ScalarField; VERKLE_NODE_WIDTH] =
-            array::from_fn(|i| (z - ScalarField::from(i as u64)) * Self::a_prime(i));
+        let lagrange_evaluations: [ScalarField; VERKLE_NODE_WIDTH] =
+            array::from_fn(|i| (z - ScalarField::from(i)) * Self::a_prime(i));
 
         // A(z) / (A'(i) * (z-i))
-        ScalarField::batch_inverse_and_multiply(&mut lagrange_evaluations, &a_z);
-
-        lagrange_evaluations
+        lagrange_evaluations.batch_inverse_and_mul(&a_z)
     }
 }

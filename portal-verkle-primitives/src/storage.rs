@@ -6,8 +6,7 @@ use crate::{
         HEADER_STORAGE_OFFSET, MAIN_STORAGE_OFFSET, NONCE_LEAF_KEY, VERKLE_NODE_WIDTH_U256,
         VERSION_LEAF_KEY,
     },
-    msm::{DefaultMsm, MultiScalarMultiplicator},
-    ScalarField, Stem, TrieKey, TrieValue,
+    ScalarField, Stem, TrieKey, TrieValue, CRS,
 };
 
 type Address32 = B256;
@@ -110,7 +109,7 @@ fn tree_key(address: &Address32, storage_pos: &U256) -> TrieKey {
             ScalarField::from_le_bytes_mod_order(&tree_index_bytes[16..]),
         ),
     ];
-    let hash_commitment = DefaultMsm.commit_sparse(&scalars).map_to_scalar_field();
+    let hash_commitment = CRS::commit_sparse(&scalars).map_to_scalar_field();
 
     let mut key = TrieKey::from(hash_commitment.to_be_bytes());
     key.set_suffix(key_suffix);

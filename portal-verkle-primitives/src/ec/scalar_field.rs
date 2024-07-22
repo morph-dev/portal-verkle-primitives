@@ -1,23 +1,28 @@
 use std::{
     fmt::Debug,
-    iter::{Product, Sum},
-    ops,
+    iter::{self, Product, Sum},
+    ops::{self, Mul},
 };
 
 use alloy_primitives::B256;
 use ark_ff::batch_inversion_and_mul;
 use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Field, Fr, One, PrimeField, Zero};
-use derive_more::{Constructor, Deref, From, Into};
+use derive_more::Constructor;
+use itertools::zip_eq;
 use overload::overload;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz::{Decode, Encode};
 
 use crate::Stem;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Constructor, From, Into, Deref)]
-pub struct ScalarField(pub(crate) Fr);
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Constructor)]
+pub struct ScalarField(Fr);
 
 impl ScalarField {
+    pub(crate) fn inner(&self) -> Fr {
+        self.0
+    }
+
     pub fn from_le_bytes_mod_order(bytes: &[u8]) -> Self {
         Self(Fr::from_le_bytes_mod_order(bytes))
     }
@@ -31,7 +36,8 @@ impl ScalarField {
 
     pub(crate) fn to_be_bytes(&self) -> B256 {
         let mut result = B256::ZERO;
-        self.serialize_compressed(result.as_mut_slice())
+        self.0
+            .serialize_compressed(result.as_mut_slice())
             .expect("ScalarFieldValue should serialize to B256");
         result
     }
@@ -52,22 +58,11 @@ impl ScalarField {
         self.0.inverse().map(Self)
     }
 
-    /// Calculates inverse of all provided scalars, ignoring the ones with value zero.
-    pub fn batch_inversion(scalars: &mut [Self]) {
-        Self::batch_inverse_and_multiply(scalars, &Self::one())
-    }
-
-    /// Calculates inverses and multiplies them.
-    ///
-    /// Updates variable `values`: `v_i` => `m / v_i`.
-    ///
-    /// Ignores the zero values.
-    pub fn batch_inverse_and_multiply(values: &mut [Self], m: &Self) {
-        let mut frs = values.iter().map(|value| value.0).collect::<Vec<_>>();
-        batch_inversion_and_mul(&mut frs, m);
-        for (value, fr) in values.iter_mut().zip(frs.into_iter()) {
-            value.0 = fr;
-        }
+    // Returns powers of provided scalar: `[x^0, x^1, x^2, ..., x^(n-1)]`.
+    pub fn powers_of(x: &Self, n: usize) -> Vec<Self> {
+        iter::successors(Some(Self::one()), |prev| Some(prev * x))
+            .take(n)
+            .collect()
     }
 }
 
@@ -91,6 +86,12 @@ impl From<&ScalarField> for B256 {
 impl From<&Stem> for ScalarField {
     fn from(stem: &Stem) -> Self {
         Self::from_le_bytes_mod_order(stem.as_slice())
+    }
+}
+
+impl From<usize> for ScalarField {
+    fn from(value: usize) -> Self {
+        Self::from(value as u64)
     }
 }
 
@@ -170,15 +171,21 @@ overload!((lhs: ScalarField) * (rhs: ?ScalarField) -> ScalarField {
 });
 overload!((lhs: &ScalarField) * (rhs: ?ScalarField) -> ScalarField { ScalarField(lhs.0) * rhs });
 
+impl Sum for ScalarField {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|a, b| a + b).unwrap_or_else(Self::zero)
+    }
+}
+
 impl<'a> Sum<&'a Self> for ScalarField {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(ScalarField::zero(), |sum, item| sum + item)
     }
 }
 
-impl Sum for ScalarField {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(ScalarField::zero(), |sum, item| sum + item)
+impl Product for ScalarField {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|a, b| a * b).unwrap_or_else(Self::one)
     }
 }
 
@@ -188,11 +195,52 @@ impl<'a> Product<&'a Self> for ScalarField {
     }
 }
 
-impl Product for ScalarField {
-    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(ScalarField::one(), |prod, item| prod * item)
+pub trait BatchInversion<T> {
+    /// Calculates inverses, ignoring zero.
+    fn batch_inverse(self) -> Self;
+
+    /// Calculates inverses and scales them, ignoring zero.
+    ///
+    /// ```text
+    /// v_i => coeff / v_i
+    /// ```
+    fn batch_inverse_and_mul(self, coeff: &T) -> Self;
+}
+
+impl<T> BatchInversion<ScalarField> for T
+where
+    T: Sized + AsMut<[ScalarField]>,
+{
+    fn batch_inverse(self) -> T {
+        self.batch_inverse_and_mul(&ScalarField::one())
+    }
+
+    fn batch_inverse_and_mul(mut self, coeff: &ScalarField) -> T {
+        let mut values = self
+            .as_mut()
+            .iter()
+            .map(|value| value.inner())
+            .collect::<Vec<_>>();
+        batch_inversion_and_mul(&mut values, &coeff.inner());
+        for (original, inverted) in zip_eq(self.as_mut(), values) {
+            original.0 = inverted;
+        }
+        self
     }
 }
+
+pub trait DotProduct<A, B>: Sized + Sum
+where
+    A: Mul<B, Output = Self>,
+{
+    fn dot_product(a: impl IntoIterator<Item = A>, b: impl IntoIterator<Item = B>) -> Self {
+        zip_eq(a, b).map(|(a, b)| a * b).sum()
+    }
+}
+
+impl<'b> DotProduct<ScalarField, &'b ScalarField> for ScalarField {}
+
+impl<'a, 'b> DotProduct<&'a ScalarField, &'b ScalarField> for ScalarField {}
 
 #[cfg(test)]
 mod tests {
@@ -200,16 +248,16 @@ mod tests {
 
     #[test]
     fn batch_inversion_and_multiplication() {
-        let mut values = vec![
-            ScalarField::from(1),
-            ScalarField::from(10),
-            ScalarField::from(123),
-            ScalarField::from(0),
-            ScalarField::from(1_000_000),
-            ScalarField::from(1 << 30),
-            ScalarField::from(1 << 60),
+        let values = vec![
+            ScalarField::from(1u64),
+            ScalarField::from(10u64),
+            ScalarField::from(123u64),
+            ScalarField::from(0u64),
+            ScalarField::from(1_000_000u64),
+            ScalarField::from(1u64 << 30),
+            ScalarField::from(1u64 << 60),
         ];
-        let m = ScalarField::from(42);
+        let m = ScalarField::from(42u64);
 
         let expected = values
             .iter()
@@ -221,9 +269,8 @@ mod tests {
                 }
             })
             .collect::<Vec<_>>();
+        let inverted = values.batch_inverse_and_mul(&m);
 
-        ScalarField::batch_inverse_and_multiply(&mut values, &m);
-
-        assert_eq!(expected, values);
+        assert_eq!(inverted, expected);
     }
 }

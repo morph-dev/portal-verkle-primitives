@@ -86,7 +86,7 @@ dependencies = [
  "ark-std 0.4.0",
  "derivative",
  "hashbrown 0.13.2",
- "itertools",
+ "itertools 0.10.5",
  "num-traits",
  "rayon",
  "zeroize",
@@ -134,7 +134,7 @@ dependencies = [
  "ark-std 0.4.0",
  "derivative",
  "digest 0.10.7",
- "itertools",
+ "itertools 0.10.5",
  "num-bigint",
  "num-traits",
  "paste",
@@ -668,7 +668,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d3627f83d8b87b432a5fad9934b4565260722a141a2c40f371f8080adec9425"
 dependencies = [
  "ethereum-types",
- "itertools",
+ "itertools 0.10.5",
  "smallvec",
 ]
 
@@ -972,6 +972,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1150,6 +1159,7 @@ dependencies = [
  "derive_more",
  "ethereum_ssz",
  "ethereum_ssz_derive",
+ "itertools 0.13.0",
  "once_cell",
  "overload",
  "rstest",
@@ -1622,7 +1632,7 @@ dependencies = [
  "derivative",
  "ethereum_serde_utils",
  "ethereum_ssz",
- "itertools",
+ "itertools 0.10.5",
  "serde",
  "serde_derive",
  "smallvec",
