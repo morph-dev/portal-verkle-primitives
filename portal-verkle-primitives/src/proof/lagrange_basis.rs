@@ -11,14 +11,14 @@ use super::precomputed_weights::PrecomputedWeights;
 ///
 /// Some operations are non-optimal when polynomials are stored in coeficient (monomial) basis:
 /// ```text
-/// P(x) = v0 + v_1 * X + ... + x_n * X^n
+/// P(x) = v0 + v_1 * X + ... + v_n * X^n
 /// ```
 ///
 /// Another way to represent the polynomial is using Langrange basis, in which we store the value
 /// that polynomial has on a given domain (in our case domain is `[0, 255]`). More precisely:
 ///
 /// ```text
-/// P(x) = y_0 * L_0(x) + y_1 * L_1(x) + y_n * L_n(x)
+/// P(x) = y_0 * L_0(x) + y_1 * L_1(x) + ... + y_n * L_n(x)
 /// ```
 ///
 /// Where `y_i` is the evaluation of the polynomial at `i`: `y_i = P(i)` and `L_i(x)` is Lagrange

@@ -4,23 +4,24 @@ use alloy_primitives::B256;
 use ssz_derive::{Decode, Encode};
 
 use crate::{
-    constants::PORTAL_NETWORK_NODE_WIDTH,
-    proof::BundleProof,
-    ssz::{SparseVector, TriePath, TrieProof},
-    Point,
+    constants::{
+        LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX, PORTAL_NETWORK_NODE_WIDTH,
+    },
+    proof::{BundleProof, TrieProof},
+    ssz::SparseVector,
+    Point, ScalarField, Stem, CRS,
 };
 
 use super::NodeVerificationError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
-pub struct BranchBundleNodeWithProof {
-    pub node: BranchBundleNode,
+pub struct LeafBundleNodeWithProof {
+    pub node: LeafBundleNode,
     pub block_hash: B256,
-    pub path: TriePath,
     pub proof: TrieProof,
 }
 
-impl BranchBundleNodeWithProof {
+impl LeafBundleNodeWithProof {
     pub fn verify(
         &self,
         commitment: &Point,
@@ -33,23 +34,37 @@ impl BranchBundleNodeWithProof {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
-pub struct BranchBundleNode {
+pub struct LeafBundleNode {
+    marker: u64,
+    stem: Stem,
     fragments: SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH>,
     bundle_proof: BundleProof,
     #[ssz(skip_serializing, skip_deserializing)]
     commitment: OnceLock<Point>,
 }
 
-impl BranchBundleNode {
+impl LeafBundleNode {
     pub fn new(
+        marker: u64,
+        stem: Stem,
         fragments: SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH>,
         bundle_proof: BundleProof,
     ) -> Self {
         Self {
+            marker,
+            stem,
             fragments,
             bundle_proof,
             commitment: OnceLock::new(),
         }
+    }
+
+    pub fn marker(&self) -> u64 {
+        self.marker
+    }
+
+    pub fn stem(&self) -> &Stem {
+        &self.stem
     }
 
     pub fn fragments(&self) -> &SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH> {
@@ -61,8 +76,28 @@ impl BranchBundleNode {
     }
 
     pub fn commitment(&self) -> &Point {
-        self.commitment
-            .get_or_init(|| self.fragments.iter_set_items().sum())
+        self.commitment.get_or_init(|| {
+            let (c1, c2) = self.c1_c2();
+            CRS::commit_sparse(&[
+                (LEAF_MARKER_INDEX, ScalarField::from(self.marker)),
+                (LEAF_STEM_INDEX, ScalarField::from(&self.stem)),
+                (LEAF_C1_INDEX, c1.map_to_scalar_field()),
+                (LEAF_C2_INDEX, c2.map_to_scalar_field()),
+            ])
+        })
+    }
+
+    pub fn c1_c2(&self) -> (Point, Point) {
+        let (first_half, second_half) = self.fragments.split_at(PORTAL_NETWORK_NODE_WIDTH / 2);
+        let sum_of_optional_points = |fragments: &[Option<Point>]| {
+            fragments
+                .iter()
+                .flat_map(|fragment| fragment.as_ref())
+                .sum::<Point>()
+        };
+        let c1 = sum_of_optional_points(first_half);
+        let c2 = sum_of_optional_points(second_half);
+        (c1, c2)
     }
 
     pub fn verify_bundle_proof(&self) -> Result<(), NodeVerificationError> {
