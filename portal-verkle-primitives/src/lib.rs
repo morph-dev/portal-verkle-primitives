@@ -9,6 +9,6 @@ pub mod portal;
 pub mod proof;
 pub mod ssz;
 mod stem;
-pub mod storage;
 mod trie_key;
 mod trie_value;
+pub mod verkle;

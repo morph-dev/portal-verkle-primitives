@@ -74,7 +74,11 @@ impl CRS {
 
     /// Single scalar multiplication.
     pub fn commit_single(index: usize, scalar: ScalarField) -> Point {
-        Point::new(INSTANCE.wnaf_precomp.mul_index(scalar.inner(), index))
+        if scalar.is_zero() {
+            Point::zero()
+        } else {
+            Point::new(INSTANCE.wnaf_precomp.mul_index(scalar.inner(), index))
+        }
     }
 
     /// Commit to sparse set of scalars.
@@ -88,11 +92,10 @@ impl CRS {
             }
             Self::commit(&dense)
         } else {
-            let mut result = Point::zero();
-            for (index, value) in scalars {
-                result += Self::commit_single(*index, value.clone())
-            }
-            result
+            scalars
+                .iter()
+                .map(|(index, value)| Self::commit_single(*index, value.clone()))
+                .sum()
         }
     }
 }
