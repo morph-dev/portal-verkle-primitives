@@ -62,8 +62,8 @@ impl LeafNode {
         self.c2.commitment()
     }
 
-    pub fn get(&self, index: usize) -> Option<&TrieValue> {
-        self.values[index].as_ref()
+    pub fn get(&self, index: u8) -> Option<&TrieValue> {
+        self.values[index as usize].as_ref()
     }
 
     /// Sets trie values and returns by how much the commitment hash changed.
@@ -73,16 +73,15 @@ impl LeafNode {
         let mut c2_diff = vec![];
 
         for (index, new_value) in writes.iter() {
-            let index = *index as usize;
-            let suffix_index = index % (VERKLE_NODE_WIDTH / 2);
-            let suffix_commitment_diff = if index < VERKLE_NODE_WIDTH / 2 {
+            let suffix_index = index % (VERKLE_NODE_WIDTH / 2) as u8;
+            let suffix_commitment_diff = if *index < (VERKLE_NODE_WIDTH / 2) as u8 {
                 &mut c1_diff
             } else {
                 &mut c2_diff
             };
 
             let (new_low_value, new_high_value) = new_value.split();
-            let old_value = self.values[index].replace(*new_value);
+            let old_value = self.values[*index as usize].replace(*new_value);
             let (old_low_value, old_high_value) = old_value.split();
 
             suffix_commitment_diff.push((2 * suffix_index, new_low_value - old_low_value));

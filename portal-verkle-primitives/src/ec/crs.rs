@@ -73,22 +73,26 @@ impl CRS {
     }
 
     /// Single scalar multiplication.
-    pub fn commit_single(index: usize, scalar: ScalarField) -> Point {
+    pub fn commit_single(index: u8, scalar: ScalarField) -> Point {
         if scalar.is_zero() {
             Point::zero()
         } else {
-            Point::new(INSTANCE.wnaf_precomp.mul_index(scalar.inner(), index))
+            Point::new(
+                INSTANCE
+                    .wnaf_precomp
+                    .mul_index(scalar.inner(), index as usize),
+            )
         }
     }
 
     /// Commit to sparse set of scalars.
-    pub fn commit_sparse(scalars: &[(usize, ScalarField)]) -> Point {
+    pub fn commit_sparse(scalars: &[(u8, ScalarField)]) -> Point {
         // TODO: consider if 64 is good value
         if scalars.len() >= 64 {
             let mut dense: [ScalarField; VERKLE_NODE_WIDTH] =
                 array::from_fn(|_| ScalarField::zero());
             for (index, value) in scalars {
-                dense[*index] = value.clone();
+                dense[*index as usize] = value.clone();
             }
             Self::commit(&dense)
         } else {

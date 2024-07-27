@@ -28,7 +28,7 @@ impl Commitment {
     /// Updates this commitment and returns by how much the commitment hash changed.
     ///
     /// @param diff By how much scalar changed.
-    pub fn update_single(&mut self, index: usize, diff: ScalarField) -> ScalarField {
+    pub fn update_single(&mut self, index: u8, diff: ScalarField) -> ScalarField {
         let old_commitment_hash = self.commitment_hash();
         *self += CRS::commit_single(index, diff);
         self.commitment_hash() - old_commitment_hash
@@ -37,7 +37,7 @@ impl Commitment {
     /// Updates this commitment and returns by how much the commitment hash changed.
     ///
     /// @param diff By how much each inner scalar changed.
-    pub fn update(&mut self, diff: &[(usize, ScalarField)]) -> ScalarField {
+    pub fn update(&mut self, diff: &[(u8, ScalarField)]) -> ScalarField {
         let old_commitment_hash = self.commitment_hash();
         *self += CRS::commit_sparse(diff);
         self.commitment_hash() - old_commitment_hash

@@ -62,7 +62,7 @@ impl TriePrinter for Node {
 impl TriePrinter for BranchNode {
     fn print_state<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         for index in 0..VERKLE_NODE_WIDTH {
-            self.get_child(index).print_state(writer)?;
+            self.get_child(index as u8).print_state(writer)?;
         }
         Ok(())
     }
@@ -73,7 +73,7 @@ impl TriePrinter for BranchNode {
         identation: usize,
     ) -> io::Result<()> {
         for index in 0..VERKLE_NODE_WIDTH {
-            let child = self.get_child(index);
+            let child = self.get_child(index as u8);
             if child.is_empty() {
                 continue;
             }
@@ -92,7 +92,7 @@ impl TriePrinter for BranchNode {
 impl TriePrinter for LeafNode {
     fn print_state<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         for index in 0..VERKLE_NODE_WIDTH {
-            if let Some(value) = self.get(index) {
+            if let Some(value) = self.get(index as u8) {
                 writeln!(
                     writer,
                     "{}{index:02x}: {}",
@@ -113,7 +113,7 @@ impl TriePrinter for LeafNode {
 
         writeln!(writer, "{:identation$}C1 - {:?}", "", self.c1())?;
         for index in 0..(VERKLE_NODE_WIDTH / 2) {
-            if let Some(value) = self.get(index) {
+            if let Some(value) = self.get(index as u8) {
                 writeln!(
                     writer,
                     "  {:identation$}{index:02x} - {}",
@@ -126,7 +126,7 @@ impl TriePrinter for LeafNode {
 
         writeln!(writer, "{:identation$}C2 - {:?}", "", self.c2())?;
         for index in (VERKLE_NODE_WIDTH / 2)..VERKLE_NODE_WIDTH {
-            if let Some(value) = self.get(index) {
+            if let Some(value) = self.get(index as u8) {
                 writeln!(
                     writer,
                     "  {:identation$}{index:02x} - {}",

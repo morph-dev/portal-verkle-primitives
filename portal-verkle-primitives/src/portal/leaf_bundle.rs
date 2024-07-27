@@ -5,10 +5,11 @@ use ssz_derive::{Decode, Encode};
 
 use crate::{
     constants::{
-        LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX, PORTAL_NETWORK_NODE_WIDTH,
+        LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX,
+        PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH,
     },
-    proof::{BundleProof, TrieProof},
-    ssz::SparseVector,
+    proof::{BundleProof, MultiProof, VerifierMultiQuery},
+    ssz::{SparseVector, TriePathCommitments},
     Point, ScalarField, Stem, CRS,
 };
 
@@ -18,18 +19,35 @@ use super::NodeVerificationError;
 pub struct LeafBundleNodeWithProof {
     pub node: LeafBundleNode,
     pub block_hash: B256,
-    pub proof: TrieProof,
+    pub trie_path: TriePathCommitments,
+    pub multiproof: MultiProof,
 }
 
 impl LeafBundleNodeWithProof {
     pub fn verify(
         &self,
         commitment: &Point,
-        _state_root: &B256,
+        state_root: &B256,
     ) -> Result<(), NodeVerificationError> {
+        // 1. Verify node
         self.node.verify(commitment)?;
-        // TODO: verify trie proof
-        Ok(())
+
+        // 2. Verify State root
+        let root = B256::from(self.trie_path.root().unwrap_or(commitment));
+        if state_root != &root {
+            return Err(NodeVerificationError::new_wrong_root(*state_root, root));
+        }
+
+        // 3. Verify multiproof
+        let mut multi_query = VerifierMultiQuery::new();
+        // Verify trie path
+        multi_query.add_trie_path_proof(self.trie_path.zip_with_stem(self.node.stem()), commitment);
+
+        if self.multiproof.verify_portal_network_proof(multi_query) {
+            Ok(())
+        } else {
+            Err(NodeVerificationError::InvalidMultiPointProof)
+        }
     }
 }
 
@@ -101,13 +119,33 @@ impl LeafBundleNode {
     }
 
     pub fn verify_bundle_proof(&self) -> Result<(), NodeVerificationError> {
-        // TODO: add implementataion
-        Ok(())
+        let mut multiquery = VerifierMultiQuery::new();
+        for (fragment_index, fragment_commitment) in self.fragments.iter_enumerated_set_items() {
+            multiquery.add_for_commitment(
+                fragment_commitment,
+                (0..VERKLE_NODE_WIDTH)
+                    .filter(|child_index| child_index / PORTAL_NETWORK_NODE_WIDTH != fragment_index)
+                    .flat_map(|child_index| {
+                        let suffix_child_index = (child_index % (VERKLE_NODE_WIDTH / 2)) as u8;
+                        let low_index = suffix_child_index * 2;
+                        let high_index = low_index + 1;
+                        [
+                            (low_index, ScalarField::zero()),
+                            (high_index, ScalarField::zero()),
+                        ]
+                    }),
+            );
+        }
+        if self.bundle_proof.verify_portal_network_proof(multiquery) {
+            Ok(())
+        } else {
+            Err(NodeVerificationError::InvalidBundleProof)
+        }
     }
 
     pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
         if commitment != self.commitment() {
-            return Err(NodeVerificationError::wrong_commitment(
+            return Err(NodeVerificationError::new_wrong_commitment(
                 commitment,
                 self.commitment(),
             ));

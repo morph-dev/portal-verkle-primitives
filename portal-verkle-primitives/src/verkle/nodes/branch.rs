@@ -42,7 +42,7 @@ impl BranchNode {
             Node::Branch(branch_node) => branch_node.get(key),
             Node::Leaf(leaf_node) => {
                 if key.starts_with_stem(leaf_node.stem()) {
-                    leaf_node.get(key.suffix() as usize)
+                    leaf_node.get(key.suffix())
                 } else {
                     None
                 }
@@ -50,23 +50,23 @@ impl BranchNode {
         }
     }
 
-    pub(crate) fn get_child(&self, index: usize) -> &Node {
-        &self.children[index]
+    pub(crate) fn get_child(&self, index: u8) -> &Node {
+        &self.children[index as usize]
     }
 
-    fn set_child(&mut self, index: usize, mut child: Node) {
+    fn set_child(&mut self, index: u8, mut child: Node) {
         self.commitment.update_single(
             index,
-            child.commitment_hash() - self.children[index].commitment_hash(),
+            child.commitment_hash() - self.children[index as usize].commitment_hash(),
         );
-        self.children[index] = child;
+        self.children[index as usize] = child;
     }
 
     /// Returns by how much the commitmant hash has changed and the path to the new branch node if
     /// one was created.
     pub fn update(&mut self, state_write: &StemStateWrite) -> (ScalarField, NewBranchNode) {
-        let index = state_write.stem[self.depth] as usize;
-        let child = &mut self.children[index];
+        let index = state_write.stem[self.depth];
+        let child = &mut self.children[index as usize];
         match child {
             Node::Empty => {
                 let mut leaf_node = Box::new(LeafNode::new(state_write.stem));
@@ -95,7 +95,7 @@ impl BranchNode {
                 } else {
                     let old_commitment_hash = leaf_node.commitment_hash();
 
-                    let old_child_index_in_new_branch = leaf_node.stem()[self.depth + 1] as usize;
+                    let old_child_index_in_new_branch = leaf_node.stem()[self.depth + 1];
                     let old_child = mem::replace(child, Node::Empty);
 
                     let mut branch_node = Box::new(Self::new(self.depth + 1));

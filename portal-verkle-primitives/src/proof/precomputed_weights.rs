@@ -76,18 +76,18 @@ impl PrecomputedWeights {
     }
 
     /// Returns `A'(i)` for i in domain
-    pub fn a_prime(i: usize) -> &'static ScalarField {
-        &INSTANCE.a_prime[i]
+    pub fn a_prime(i: u8) -> &'static ScalarField {
+        &INSTANCE.a_prime[i as usize]
     }
 
     /// Returns `1/A'(i)` for i in domain
-    pub fn a_prime_inv(i: usize) -> &'static ScalarField {
-        &INSTANCE.a_prime_inv[i]
+    pub fn a_prime_inv(i: u8) -> &'static ScalarField {
+        &INSTANCE.a_prime_inv[i as usize]
     }
 
-    pub fn domain_inv(i: usize) -> &'static ScalarField {
+    pub fn domain_inv(i: u8) -> &'static ScalarField {
         assert_ne!(i, 0);
-        &INSTANCE.domain_inv[i]
+        &INSTANCE.domain_inv[i as usize]
     }
 
     /// Evaluates Lagrange polynomials `L_i` at a given point `z`, using barycentric formula.
@@ -103,7 +103,7 @@ impl PrecomputedWeights {
 
         // A'(i) * (z-i)
         let lagrange_evaluations: [ScalarField; VERKLE_NODE_WIDTH] =
-            array::from_fn(|i| (z - ScalarField::from(i)) * Self::a_prime(i));
+            array::from_fn(|i| (z - ScalarField::from(i)) * Self::a_prime(i as u8));
 
         // A(z) / (A'(i) * (z-i))
         lagrange_evaluations.batch_inverse_and_mul(&a_z)

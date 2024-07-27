@@ -5,9 +5,9 @@ use ssz_derive::{Decode, Encode};
 
 use crate::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
-    proof::TrieProof,
-    ssz::{SparseVector, TriePath},
-    Point, CRS,
+    proof::{MultiProof, VerifierMultiQuery},
+    ssz::{SparseVector, TriePathWithCommitments},
+    Point, ScalarField, CRS,
 };
 
 use super::NodeVerificationError;
@@ -16,19 +16,55 @@ use super::NodeVerificationError;
 pub struct BranchFragmentNodeWithProof {
     pub node: BranchFragmentNode,
     pub block_hash: B256,
-    pub path: TriePath,
-    pub proof: TrieProof,
+    pub bundle_commitment: Point,
+    pub trie_path: TriePathWithCommitments,
+    pub multiproof: MultiProof,
 }
 
 impl BranchFragmentNodeWithProof {
     pub fn verify(
         &self,
         commitment: &Point,
-        _state_root: &B256,
+        state_root: &B256,
     ) -> Result<(), NodeVerificationError> {
+        // 1. Verify node
         self.node.verify(commitment)?;
-        // TODO: verify trie proof
-        Ok(())
+
+        // 2. Verify State root
+        let root = B256::from(self.trie_path.root().unwrap_or(&self.bundle_commitment));
+        if state_root != &root {
+            return Err(NodeVerificationError::new_wrong_root(*state_root, root));
+        }
+
+        // 3. Verify multiproof
+        let mut multi_query = VerifierMultiQuery::new();
+
+        // 3.1. Verify trie path
+        multi_query.add_trie_path_proof(self.trie_path.clone(), &self.bundle_commitment);
+
+        // 3.2. Verify children openings to bundle commitment
+        multi_query.add_for_commitment(
+            &self.bundle_commitment,
+            self.node
+                .children
+                .iter()
+                .enumerate()
+                .map(|(child_index, child)| {
+                    (
+                        child_index as u8,
+                        child
+                            .as_ref()
+                            .map(Point::map_to_scalar_field)
+                            .unwrap_or_else(ScalarField::zero),
+                    )
+                }),
+        );
+
+        if self.multiproof.verify_portal_network_proof(multi_query) {
+            Ok(())
+        } else {
+            Err(NodeVerificationError::InvalidMultiPointProof)
+        }
     }
 }
 
@@ -52,8 +88,8 @@ impl BranchFragmentNode {
         }
     }
 
-    pub fn fragment_index(&self) -> usize {
-        self.fragment_index as usize
+    pub fn fragment_index(&self) -> u8 {
+        self.fragment_index
     }
 
     pub fn children(&self) -> &SparseVector<Point, PORTAL_NETWORK_NODE_WIDTH> {
@@ -65,7 +101,8 @@ impl BranchFragmentNode {
             self.children
                 .iter_enumerated_set_items()
                 .map(|(child_index, child)| {
-                    let index = child_index + self.fragment_index() * PORTAL_NETWORK_NODE_WIDTH;
+                    let index =
+                        child_index as u8 + self.fragment_index * PORTAL_NETWORK_NODE_WIDTH as u8;
                     CRS::commit_single(index, child.map_to_scalar_field())
                 })
                 .sum()
@@ -74,7 +111,7 @@ impl BranchFragmentNode {
 
     pub fn verify(&self, commitment: &Point) -> Result<(), NodeVerificationError> {
         if commitment != self.commitment() {
-            return Err(NodeVerificationError::wrong_commitment(
+            return Err(NodeVerificationError::new_wrong_commitment(
                 commitment,
                 self.commitment(),
             ));
@@ -84,6 +121,11 @@ impl BranchFragmentNode {
         }
         if self.children.iter_set_items().any(|c| c.is_zero()) {
             return Err(NodeVerificationError::ZeroChild);
+        }
+        if self.fragment_index >= PORTAL_NETWORK_NODE_WIDTH as u8 {
+            return Err(NodeVerificationError::InvalidFragmentIndex(
+                self.fragment_index,
+            ));
         }
         Ok(())
     }

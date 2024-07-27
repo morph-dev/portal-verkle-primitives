@@ -8,6 +8,8 @@ pub struct Transcript {
 }
 
 impl Transcript {
+    pub const PORTAL_NETWORK_LABEL: &'static str = "portal-network";
+
     pub fn new(label: &str) -> Self {
         Self {
             hasher: Sha256::new_with_prefix(label),

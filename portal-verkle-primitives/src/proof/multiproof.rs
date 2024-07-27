@@ -1,27 +1,20 @@
+use std::borrow::Cow;
+
 use itertools::{zip_eq, Itertools};
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
 
 use crate::{constants::VERKLE_NODE_WIDTH, BatchInversion, DotProduct, Point, ScalarField};
 
-use super::{lagrange_basis::LagrangeBasis, transcript::Transcript, IpaProof};
-
-pub struct ProverQuery {
-    pub poly: LagrangeBasis,
-    pub c: Point,
-    pub z: usize,
-}
-
-pub struct VerifierQuery {
-    pub c: Point,
-    pub z: usize,
-    pub y: ScalarField,
-}
+use super::{
+    lagrange_basis::LagrangeBasis, transcript::Transcript, IpaProof, ProverMultiQuery,
+    VerifierMultiQuery,
+};
 
 /// The multi-point proof based on IPA.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
 #[serde(deny_unknown_fields)]
-pub struct MultiPointProof {
+pub struct MultiProof {
     #[serde(alias = "ipaProof")]
     pub ipa_proof: IpaProof,
 
@@ -30,14 +23,25 @@ pub struct MultiPointProof {
     pub g_commitment: Point,
 }
 
-impl MultiPointProof {
-    pub fn create(queries: Vec<ProverQuery>, transcript: &mut Transcript) -> Self {
+impl MultiProof {
+    pub fn create_portal_network_proof(multiquery: ProverMultiQuery) -> Self {
+        Self::create(
+            multiquery,
+            &mut Transcript::new(Transcript::PORTAL_NETWORK_LABEL),
+        )
+    }
+
+    pub fn create(multiquery: ProverMultiQuery, transcript: &mut Transcript) -> Self {
         transcript.domain_sep("multiproof");
 
         // 1. Compute r
         // r = H(C_0, z_0, y_0,  C_1, z_1, y_1,  ...,  C_m, z_m, y_m)
-        for query in &queries {
-            transcript.append_point("C", &query.c);
+        for query in multiquery.iter() {
+            let commitment: Cow<Point> = match query.commitment.as_ref() {
+                Some(commitment) => Cow::Borrowed(commitment),
+                None => Cow::Owned(query.poly.commit()),
+            };
+            transcript.append_point("C", &commitment);
             transcript.append_scalar("z", &ScalarField::from(query.z));
             transcript.append_scalar("y", query.poly.evaluate_in_domain(query.z))
         }
@@ -47,11 +51,11 @@ impl MultiPointProof {
         // g(x) = ∑ r^i * (f_i(x) - y_i) / (x - z_i)
 
         // r^i
-        let powers_of_r = ScalarField::powers_of(&r, queries.len());
+        let powers_of_r = ScalarField::powers_of(&r, multiquery.len());
 
         // Aggregate scaled polynomials by opening point `z`
         // HashMap<z, sum(r^i * f_i(x))> ; z = z_i
-        let agg_polynomials = zip_eq(&powers_of_r, queries)
+        let agg_polynomials = zip_eq(&powers_of_r, multiquery)
             .map(|(power_of_r, query)| (query.z, query.poly * power_of_r))
             .into_grouping_map()
             .sum();
@@ -71,7 +75,7 @@ impl MultiPointProof {
         let t = transcript.challenge_scalar("t");
 
         // NOTE: Check that t is not in the domain!
-        assert!(t > ScalarField::from(VERKLE_NODE_WIDTH));
+        assert!(t >= ScalarField::from(VERKLE_NODE_WIDTH));
 
         // 5. Compute h(x)
         // h(x) = ∑ r^i * f_i(x) / (t - z_i)
@@ -107,7 +111,14 @@ impl MultiPointProof {
         }
     }
 
-    pub fn verify(&self, queries: &[VerifierQuery], transcript: &mut Transcript) -> bool {
+    pub fn verify_portal_network_proof(&self, multiquery: VerifierMultiQuery) -> bool {
+        self.verify(
+            multiquery,
+            &mut Transcript::new(Transcript::PORTAL_NETWORK_LABEL),
+        )
+    }
+
+    pub fn verify(&self, multiquery: VerifierMultiQuery, transcript: &mut Transcript) -> bool {
         transcript.domain_sep("multiproof");
 
         // Extract D (commitment to g(x): D = [g(x)])
@@ -115,8 +126,8 @@ impl MultiPointProof {
 
         // 1. Compute r
         // r = H(C_0, z_0, y_0,  C_1, z_1, y_1,  ...,  C_m, z_m, y_m)
-        for query in queries {
-            transcript.append_point("C", &query.c);
+        for query in multiquery.iter() {
+            transcript.append_point("C", &query.commitment);
             transcript.append_scalar("z", &ScalarField::from(query.z));
             transcript.append_scalar("y", &query.y)
         }
@@ -131,10 +142,10 @@ impl MultiPointProof {
         // coeff_i = r^i / (t - z_i)
 
         // r^i
-        let powers_of_r = ScalarField::powers_of(&r, queries.len());
+        let powers_of_r = ScalarField::powers_of(&r, multiquery.len());
 
         // 1 / (t - z_i)
-        let inverse_denominators = queries
+        let inverse_denominators = multiquery
             .iter()
             .map(|query| &t - ScalarField::from(query.z))
             .collect::<Vec<_>>()
@@ -147,15 +158,15 @@ impl MultiPointProof {
 
         // 4. Compute E (commitment to h(x): E = [h(x)])
         // E = ∑ r^i * C_i / (t - z_i) = ∑ coeff_i * C_i
-        let e = Point::multi_scalar_mul(queries.iter().map(|query| &query.c), &coefficients);
+        let e = Point::multi_scalar_mul(
+            multiquery.iter().map(|query| &query.commitment),
+            &coefficients,
+        );
         transcript.append_point("E", &e);
 
         // 4. Compute p(t)
         // p(t) = ∑ r^i * y_i / (t - z_i) = ∑ coeff_i * y_i
-        // let p_t = zip_eq(coefficients, queries)
-        //     .map(|(coeff, query)| coeff * &query.y)
-        //     .sum();
-        let p_t = ScalarField::dot_product(coefficients, queries.iter().map(|query| &query.y));
+        let p_t = ScalarField::dot_product(coefficients, multiquery.iter().map(|query| &query.y));
 
         // 5. Compute commitment to p(x)
         // [p(x)] = [h(x)] - [g(x)] = E - D
@@ -175,6 +186,7 @@ mod tests {
 
     use crate::{
         constants::{LEAF_MARKER_INDEX, LEAF_STEM_INDEX},
+        proof::{prover_query::ProverQuery, VerifierQuery},
         Stem,
     };
 
@@ -199,7 +211,7 @@ mod tests {
             (&x + ScalarField::from(2u64)) * (&x + ScalarField::from(1u64)).inverse().unwrap()
         };
 
-        let openings: Vec<(PolynomialFn, usize)> = vec![
+        let openings: Vec<(PolynomialFn, u8)> = vec![
             (Box::new(f_const), 13),
             (Box::new(f_poly), 42),
             (Box::new(f_non_poly), 183),
@@ -212,24 +224,24 @@ mod tests {
             .map(|(poly_f, z)| {
                 let poly = LagrangeBasis::new(array::from_fn(poly_f));
                 ProverQuery {
-                    c: poly.commit(),
                     poly,
+                    commitment: None,
                     z: *z,
                 }
             })
             .collect();
-        let proof = MultiPointProof::create(queries, &mut transcript);
+        let proof = MultiProof::create(queries, &mut transcript);
 
         let mut transcript = Transcript::new("test");
         let queries = openings
             .iter()
             .map(|(poly_f, z)| VerifierQuery {
-                c: LagrangeBasis::new(array::from_fn(poly_f)).commit(),
+                commitment: LagrangeBasis::new(array::from_fn(poly_f)).commit(),
                 z: *z,
-                y: poly_f(*z),
+                y: poly_f(*z as usize),
             })
-            .collect::<Vec<_>>();
-        assert!(proof.verify(&queries, &mut transcript));
+            .collect();
+        assert!(proof.verify(queries, &mut transcript));
     }
 
     /// Proof from the kaustinen devnet-6, block 1
@@ -258,7 +270,7 @@ mod tests {
             ],
             "final_evaluation": "0x08a3079093df751fc850f3805e10cc898314688111df75aa20511c32198a93e3"
         }"#;
-        let proof = MultiPointProof {
+        let proof = MultiProof {
             ipa_proof: serde_json::from_str::<IpaProof>(ipa_proof)?,
             g_commitment: Point::from(&B256::from_hex(
                 "0x5af46ab3e8676b9d4de8ae0be9670c45e9afd43cc11524c7946728268652028a",
@@ -274,26 +286,27 @@ mod tests {
         let other_stem =
             Stem::from_hex("0x5bdf12f5e17d2911dac2d2b0fc9e64a3ddc1d1ea4fc2568fe7e741ff2daa18")?;
 
-        let queries = vec![
+        let mut queries = VerifierMultiQuery::new();
+        queries.extend([
             VerifierQuery {
-                c: root,
+                commitment: root,
                 z: 0x5b,
                 y: other_leaf.map_to_scalar_field(),
             },
             VerifierQuery {
-                c: other_leaf.clone(),
+                commitment: other_leaf.clone(),
                 z: LEAF_MARKER_INDEX,
                 y: ScalarField::one(),
             },
             VerifierQuery {
-                c: other_leaf,
+                commitment: other_leaf,
                 z: LEAF_STEM_INDEX,
                 y: ScalarField::from(&other_stem),
             },
-        ];
+        ]);
         let mut transcript = Transcript::new("vt");
         assert!(
-            proof.verify(&queries, &mut transcript),
+            proof.verify(queries, &mut transcript),
             "Multiproof should verify"
         );
         Ok(())

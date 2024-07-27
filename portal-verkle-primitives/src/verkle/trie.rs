@@ -69,7 +69,7 @@ impl VerkleTrie {
 
         loop {
             branches.push(node);
-            node = match node.get_child(stem[depth] as usize) {
+            node = match node.get_child(stem[depth]) {
                 Node::Empty => return Err(VerkleTrieError::NodeNotFound { stem: *stem, depth }),
                 Node::Branch(next_node) => next_node,
                 Node::Leaf(leaf) => {

@@ -18,7 +18,7 @@ pub const CODE_OFFSET: U256 = U256::from_limbs([128, 0, 0, 0]);
 pub const MAIN_STORAGE_OFFSET: U256 = U256::from_limbs([0, 0, 0, 1 << 56]);
 
 // Leaf node indices
-pub const LEAF_MARKER_INDEX: usize = 0;
-pub const LEAF_STEM_INDEX: usize = 1;
-pub const LEAF_C1_INDEX: usize = 2;
-pub const LEAF_C2_INDEX: usize = 3;
+pub const LEAF_MARKER_INDEX: u8 = 0;
+pub const LEAF_STEM_INDEX: u8 = 1;
+pub const LEAF_C1_INDEX: u8 = 2;
+pub const LEAF_C2_INDEX: u8 = 3;

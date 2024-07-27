@@ -89,15 +89,21 @@ impl From<&Stem> for ScalarField {
     }
 }
 
-impl From<usize> for ScalarField {
-    fn from(value: usize) -> Self {
-        Self::from(value as u64)
+impl From<u8> for ScalarField {
+    fn from(value: u8) -> Self {
+        Self(value.into())
     }
 }
 
 impl From<u64> for ScalarField {
     fn from(value: u64) -> Self {
         Self(value.into())
+    }
+}
+
+impl From<usize> for ScalarField {
+    fn from(value: usize) -> Self {
+        Self::from(value as u64)
     }
 }
 

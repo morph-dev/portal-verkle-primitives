@@ -57,8 +57,8 @@ impl LagrangeBasis {
     }
 
     /// Calculates `P(z)` for `z` in domain
-    pub fn evaluate_in_domain(&self, z: usize) -> &ScalarField {
-        &self.y[z]
+    pub fn evaluate_in_domain(&self, z: u8) -> &ScalarField {
+        &self.y[z as usize]
     }
 
     /// Calculates `P(z)` for `z` outside domain
@@ -81,11 +81,13 @@ impl LagrangeBasis {
     /// Q(k) = ∑ -Q(j) * A'(k) / A'(j)
     ///       j≠k
     /// ```
-    pub fn divide_on_domain(&self, k: usize) -> Self {
+    pub fn divide_on_domain(&self, k: u8) -> Self {
+        let k_usize = k as usize;
         let mut q = array::from_fn(|_| ScalarField::zero());
         for i in 0..VERKLE_NODE_WIDTH {
+            let i_u8 = i as u8;
             // 1/(i-k)
-            let inverse = match i {
+            let inverse = match i_u8 {
                 i if i < k => -PrecomputedWeights::domain_inv(k - i),
                 i if i == k => continue,
                 i if i > k => PrecomputedWeights::domain_inv(i - k).clone(),
@@ -93,9 +95,10 @@ impl LagrangeBasis {
             };
 
             // Q(i) = (y_i-y_k) / (i-k)
-            q[i] = (&self.y[i] - &self.y[k]) * inverse;
+            q[i] = (&self.y[i] - &self.y[k_usize]) * inverse;
 
-            q[k] -= &q[i] * PrecomputedWeights::a_prime(k) * PrecomputedWeights::a_prime_inv(i);
+            q[k_usize] -=
+                &q[i] * PrecomputedWeights::a_prime(k) * PrecomputedWeights::a_prime_inv(i_u8);
         }
 
         Self::new(q)
