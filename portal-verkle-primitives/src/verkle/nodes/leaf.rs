@@ -5,7 +5,7 @@ use crate::{
         LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX, VERKLE_NODE_WIDTH,
     },
     ssz::SparseVector,
-    Point, ScalarField, Stem, TrieValue, TrieValueSplit, CRS,
+    ScalarField, Stem, TrieValue, TrieValueSplit, CRS,
 };
 
 use super::commitment::Commitment;
@@ -46,20 +46,16 @@ impl LeafNode {
         &self.stem
     }
 
-    pub fn commitment(&self) -> &Point {
-        self.commitment.commitment()
+    pub fn commitment(&self) -> &Commitment {
+        &self.commitment
     }
 
-    pub fn commitment_hash(&mut self) -> ScalarField {
-        self.commitment.commitment_hash()
+    pub fn c1(&self) -> &Commitment {
+        &self.c1
     }
 
-    pub fn c1(&self) -> &Point {
-        self.c1.commitment()
-    }
-
-    pub fn c2(&self) -> &Point {
-        self.c2.commitment()
+    pub fn c2(&self) -> &Commitment {
+        &self.c2
     }
 
     pub fn get(&self, index: u8) -> Option<&TrieValue> {

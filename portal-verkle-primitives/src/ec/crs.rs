@@ -1,10 +1,8 @@
-use std::array;
-
 use banderwagon::msm::MSMPrecompWnaf;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 
-use crate::{constants::VERKLE_NODE_WIDTH, Point, ScalarField};
+use crate::{constants::VERKLE_NODE_WIDTH, utils::array_long_const, Point, ScalarField};
 
 const PEDERSEN_SEED: &[u8] = b"eth_verkle_oct_2021";
 
@@ -23,7 +21,7 @@ static INSTANCE: Lazy<CRS> = Lazy::new(CRS::new);
 impl CRS {
     fn new() -> Self {
         let mut generated_elements = 0;
-        let mut elements: [Point; VERKLE_NODE_WIDTH] = array::from_fn(|_| Point::zero());
+        let mut elements = array_long_const(Point::zero());
 
         for i in 0u64.. {
             if generated_elements == elements.len() {
@@ -73,7 +71,7 @@ impl CRS {
     }
 
     /// Single scalar multiplication.
-    pub fn commit_single(index: u8, scalar: ScalarField) -> Point {
+    pub fn commit_single(index: u8, scalar: &ScalarField) -> Point {
         if scalar.is_zero() {
             Point::zero()
         } else {
@@ -89,8 +87,7 @@ impl CRS {
     pub fn commit_sparse(scalars: &[(u8, ScalarField)]) -> Point {
         // TODO: consider if 64 is good value
         if scalars.len() >= 64 {
-            let mut dense: [ScalarField; VERKLE_NODE_WIDTH] =
-                array::from_fn(|_| ScalarField::zero());
+            let mut dense = array_long_const(ScalarField::zero());
             for (index, value) in scalars {
                 dense[*index as usize] = value.clone();
             }
@@ -98,7 +95,7 @@ impl CRS {
         } else {
             scalars
                 .iter()
-                .map(|(index, value)| Self::commit_single(*index, value.clone()))
+                .map(|(index, value)| Self::commit_single(*index, value))
                 .sum()
         }
     }

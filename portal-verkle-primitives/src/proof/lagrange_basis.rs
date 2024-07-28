@@ -1,9 +1,13 @@
-use std::{array, iter::Sum, ops};
+use std::{iter::Sum, ops};
 
 use itertools::Itertools;
 use overload::overload;
 
-use crate::{constants::VERKLE_NODE_WIDTH, DotProduct, Point, ScalarField, CRS};
+use crate::{
+    constants::VERKLE_NODE_WIDTH,
+    utils::{array_long, array_long_const},
+    DotProduct, Point, ScalarField, CRS,
+};
 
 use super::precomputed_weights::PrecomputedWeights;
 
@@ -40,7 +44,7 @@ impl LagrangeBasis {
     }
 
     pub fn new_const(value: &ScalarField) -> Self {
-        Self::new(array::from_fn(|_| value.clone()))
+        Self::new(array_long_const(value.clone()))
     }
 
     pub fn zero() -> Self {
@@ -83,7 +87,7 @@ impl LagrangeBasis {
     /// ```
     pub fn divide_on_domain(&self, k: u8) -> Self {
         let k_usize = k as usize;
-        let mut q = array::from_fn(|_| ScalarField::zero());
+        let mut q = array_long_const(ScalarField::zero());
         for i in 0..VERKLE_NODE_WIDTH {
             let i_u8 = i as u8;
             // 1/(i-k)
@@ -109,7 +113,7 @@ impl From<&[ScalarField]> for LagrangeBasis {
     fn from(other: &[ScalarField]) -> Self {
         assert!(other.len() == VERKLE_NODE_WIDTH);
         Self {
-            y: array::from_fn(|i| other[i].clone()),
+            y: array_long(|i| other[i as usize].clone()),
         }
     }
 }

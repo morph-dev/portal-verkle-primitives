@@ -1,32 +1,26 @@
 use branch::BranchNode;
+use commitment::Commitment;
 use leaf::LeafNode;
-
-use crate::{Point, ScalarField};
+use once_cell::sync::Lazy;
 
 pub mod branch;
 pub mod commitment;
 pub mod leaf;
+pub mod portal_branch_node_builder;
 
 pub enum Node {
     Empty,
     Branch(Box<BranchNode>),
     Leaf(Box<LeafNode>),
 }
+pub static ZERO: Lazy<Commitment> = Lazy::new(Commitment::zero);
 
 impl Node {
-    pub fn commitment(&self) -> Point {
+    pub fn commitment(&self) -> &Commitment {
         match self {
-            Node::Empty => Point::zero(),
-            Node::Branch(branch_node) => branch_node.commitment().clone(),
-            Node::Leaf(leaf_node) => leaf_node.commitment().clone(),
-        }
-    }
-
-    pub fn commitment_hash(&mut self) -> ScalarField {
-        match self {
-            Node::Empty => ScalarField::zero(),
-            Node::Branch(branch_node) => branch_node.commitment_hash(),
-            Node::Leaf(leaf_node) => leaf_node.commitment_hash(),
+            Node::Empty => &ZERO,
+            Node::Branch(branch_node) => branch_node.commitment(),
+            Node::Leaf(leaf_node) => leaf_node.commitment(),
         }
     }
 

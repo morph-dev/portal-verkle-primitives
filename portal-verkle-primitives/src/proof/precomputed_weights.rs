@@ -1,8 +1,6 @@
-use std::array;
-
 use once_cell::sync::Lazy;
 
-use crate::{constants::VERKLE_NODE_WIDTH, BatchInversion, ScalarField};
+use crate::{constants::VERKLE_NODE_WIDTH, utils::array_long, BatchInversion, ScalarField};
 
 /// Precomputed weights for Lagrange polynomial (`L_i`) related calculations.
 ///
@@ -46,18 +44,18 @@ static INSTANCE: Lazy<PrecomputedWeights> = Lazy::new(PrecomputedWeights::new);
 
 impl PrecomputedWeights {
     fn new() -> Self {
-        let a_prime = array::from_fn(|i| {
+        let a_prime = array_long(|i| {
             //  ∏ (i-j)
             // j≠i
             (0..VERKLE_NODE_WIDTH)
-                .filter(|j| i != *j)
+                .filter(|j| i != *j as u8)
                 .map(|j| ScalarField::from(i) - ScalarField::from(j))
                 .product()
         });
 
         let a_prime_inv = a_prime.clone().batch_inverse();
 
-        let domain_inv = array::from_fn(ScalarField::from).batch_inverse();
+        let domain_inv = array_long(ScalarField::from).batch_inverse();
 
         Self {
             a_prime,
@@ -102,8 +100,7 @@ impl PrecomputedWeights {
         let a_z = Self::evaluate_a(z);
 
         // A'(i) * (z-i)
-        let lagrange_evaluations: [ScalarField; VERKLE_NODE_WIDTH] =
-            array::from_fn(|i| (z - ScalarField::from(i)) * Self::a_prime(i as u8));
+        let lagrange_evaluations = array_long(|i| (z - ScalarField::from(i)) * Self::a_prime(i));
 
         // A(z) / (A'(i) * (z-i))
         lagrange_evaluations.batch_inverse_and_mul(&a_z)

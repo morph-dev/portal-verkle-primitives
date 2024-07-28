@@ -11,4 +11,5 @@ pub mod ssz;
 mod stem;
 mod trie_key;
 mod trie_value;
+pub(crate) mod utils;
 pub mod verkle;

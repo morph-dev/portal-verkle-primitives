@@ -29,11 +29,11 @@ impl VerkleTrie {
     }
 
     pub fn root_commitment(&self) -> &Point {
-        self.root_node.commitment()
+        self.root_node.commitment().as_point()
     }
 
     pub fn root(&self) -> B256 {
-        self.root_node.commitment().into()
+        self.root_commitment().into()
     }
 
     pub fn get(&self, key: &TrieKey) -> Option<&TrieValue> {
@@ -68,8 +68,9 @@ impl VerkleTrie {
         let mut depth = 0;
 
         loop {
-            branches.push(node);
-            node = match node.get_child(stem[depth]) {
+            let child_index = stem[depth];
+            branches.push((node, child_index));
+            node = match node.get_child(child_index) {
                 Node::Empty => return Err(VerkleTrieError::NodeNotFound { stem: *stem, depth }),
                 Node::Branch(next_node) => next_node,
                 Node::Leaf(leaf) => {

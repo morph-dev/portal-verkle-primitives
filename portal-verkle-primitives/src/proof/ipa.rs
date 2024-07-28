@@ -1,4 +1,4 @@
-use std::{array, iter};
+use std::iter;
 
 use itertools::{chain, zip_eq};
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,7 @@ use crate::{
     constants::{VERKLE_NODE_WIDTH, VERKLE_NODE_WIDTH_BITS},
     ec::CRS,
     proof::precomputed_weights::PrecomputedWeights,
+    utils::array_long_const,
     BatchInversion, DotProduct, Point, ScalarField,
 };
 
@@ -157,7 +158,7 @@ impl IpaProof {
         // They are calculated by aggregating 1/x_i (x_agg_i) in a smart way.
         // We also multiply them with -a' to avoid that step in the future, as it is needed for
         // multiplication with both G and b.
-        let mut g_coeff: [ScalarField; VERKLE_NODE_WIDTH] = array::from_fn(|_| -a_prime);
+        let mut g_coeff: [ScalarField; VERKLE_NODE_WIDTH] = array_long_const(-a_prime);
         for (i, g_coeff) in g_coeff.iter_mut().enumerate() {
             for bit_index in 0..VERKLE_NODE_WIDTH_BITS {
                 if i & (1 << bit_index) != 0 {
@@ -187,6 +188,8 @@ impl IpaProof {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::array_long;
+
     use super::*;
 
     #[test]
@@ -212,7 +215,7 @@ mod tests {
         };
         let x = ScalarField::from(1234u64);
         let y = eval(&x);
-        let poly = LagrangeBasis::new(array::from_fn(|i| eval(&ScalarField::from(i))));
+        let poly = LagrangeBasis::new(array_long(|i| eval(&ScalarField::from(i))));
         let c = poly.commit();
         let mut transcript = Transcript::new("test");
         let proof = IpaProof::open_polynomial(Some(c.clone()), poly, x.clone(), &mut transcript);

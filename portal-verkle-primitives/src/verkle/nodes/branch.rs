@@ -1,10 +1,12 @@
-use std::{array, mem};
+use std::mem;
 
 use crate::{
     constants::VERKLE_NODE_WIDTH,
+    proof::lagrange_basis::LagrangeBasis,
     ssz::TriePath,
+    utils::array_long,
     verkle::{NewBranchNode, StemStateWrite},
-    Point, ScalarField, Stem, TrieKey, TrieValue,
+    ScalarField, Stem, TrieKey, TrieValue,
 };
 
 use super::{commitment::Commitment, leaf::LeafNode, Node};
@@ -23,16 +25,16 @@ impl BranchNode {
         Self {
             depth,
             commitment: Commitment::zero(),
-            children: array::from_fn(|_| Node::Empty),
+            children: array_long(|_| Node::Empty),
         }
     }
 
-    pub fn commitment(&self) -> &Point {
-        self.commitment.commitment()
+    pub fn depth(&self) -> usize {
+        self.depth
     }
 
-    pub fn commitment_hash(&mut self) -> ScalarField {
-        self.commitment.commitment_hash()
+    pub fn commitment(&self) -> &Commitment {
+        &self.commitment
     }
 
     pub fn get(&self, key: &TrieKey) -> Option<&TrieValue> {
@@ -54,11 +56,10 @@ impl BranchNode {
         &self.children[index as usize]
     }
 
-    fn set_child(&mut self, index: u8, mut child: Node) {
-        self.commitment.update_single(
-            index,
-            child.commitment_hash() - self.children[index as usize].commitment_hash(),
-        );
+    fn set_child(&mut self, index: u8, child: Node) {
+        let diff =
+            child.commitment().as_scalar() - self.children[index as usize].commitment().as_scalar();
+        self.commitment.update_single(index, &diff);
         self.children[index as usize] = child;
     }
 
@@ -74,26 +75,26 @@ impl BranchNode {
                 *child = Node::Leaf(leaf_node);
                 (
                     self.commitment
-                        .update_single(index, child.commitment_hash()),
+                        .update_single(index, child.commitment().as_scalar()),
                     None,
                 )
             }
             Node::Branch(branch_node) => {
-                let (commitment_hash_diff, new_branch_node) = branch_node.update(state_write);
+                let (child_value_diff, new_branch_node) = branch_node.update(state_write);
                 (
-                    self.commitment.update_single(index, commitment_hash_diff),
+                    self.commitment.update_single(index, &child_value_diff),
                     new_branch_node,
                 )
             }
             Node::Leaf(leaf_node) => {
                 if leaf_node.stem() == &state_write.stem {
-                    let commitment_hash_diff = leaf_node.update(&state_write.writes);
+                    let child_value_diff = leaf_node.update(&state_write.writes);
                     (
-                        self.commitment.update_single(index, commitment_hash_diff),
+                        self.commitment.update_single(index, &child_value_diff),
                         None,
                     )
                 } else {
-                    let old_commitment_hash = leaf_node.commitment_hash();
+                    let old_child_value = leaf_node.commitment().to_scalar();
 
                     let old_child_index_in_new_branch = leaf_node.stem()[self.depth + 1];
                     let old_child = mem::replace(child, Node::Empty);
@@ -106,13 +107,21 @@ impl BranchNode {
                         state_write.stem[..branch_node.depth].to_vec(),
                     ));
                     *child = Node::Branch(branch_node);
+                    let child_value_diff = child.commitment().as_scalar() - old_child_value;
                     (
-                        self.commitment
-                            .update_single(index, child.commitment_hash() - old_commitment_hash),
+                        self.commitment.update_single(index, &child_value_diff),
                         new_branch_node,
                     )
                 }
             }
         }
+    }
+
+    pub fn to_lagrange_basis(&self) -> LagrangeBasis {
+        LagrangeBasis::new(
+            self.children
+                .each_ref()
+                .map(|child| child.commitment().to_scalar()),
+        )
     }
 }

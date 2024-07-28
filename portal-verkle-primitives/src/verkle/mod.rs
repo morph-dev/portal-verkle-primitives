@@ -32,6 +32,6 @@ pub struct AuxiliaryTrieModifications {
 
 #[derive(Clone)]
 pub struct PathToLeaf<'a> {
-    pub branches: Vec<&'a BranchNode>,
+    pub branches: Vec<(&'a BranchNode, u8)>,
     pub leaf: &'a LeafNode,
 }

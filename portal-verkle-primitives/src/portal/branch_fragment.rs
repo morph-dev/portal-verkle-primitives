@@ -103,7 +103,7 @@ impl BranchFragmentNode {
                 .map(|(child_index, child)| {
                     let index =
                         child_index as u8 + self.fragment_index * PORTAL_NETWORK_NODE_WIDTH as u8;
-                    CRS::commit_single(index, child.map_to_scalar_field())
+                    CRS::commit_single(index, &child.map_to_scalar_field())
                 })
                 .sum()
         })

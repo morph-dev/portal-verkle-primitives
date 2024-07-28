@@ -40,3 +40,13 @@ impl TriePathWithCommitments {
         self.first().map(|(commitment, _)| commitment)
     }
 }
+
+impl TryFrom<Vec<(Point, u8)>> for TriePathWithCommitments {
+    type Error = String;
+
+    fn try_from(value: Vec<(Point, u8)>) -> Result<Self, Self::Error> {
+        VariableList::new(value)
+            .map(Self)
+            .map_err(|_| "Provided vector is too long".to_string())
+    }
+}

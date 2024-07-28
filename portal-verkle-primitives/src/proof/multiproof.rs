@@ -179,34 +179,32 @@ impl MultiProof {
 
 #[cfg(test)]
 mod tests {
-
-    use std::array;
-
     use alloy_primitives::{hex::FromHex, B256};
 
     use crate::{
         constants::{LEAF_MARKER_INDEX, LEAF_STEM_INDEX},
         proof::{prover_query::ProverQuery, VerifierQuery},
+        utils::array_long,
         Stem,
     };
 
     use super::*;
 
-    type PolynomialFn = Box<dyn Fn(usize) -> ScalarField>;
+    type PolynomialFn = Box<dyn Fn(u8) -> ScalarField>;
 
     #[test]
     fn simple_multi_opening() {
         // p(x) = 42
-        let f_const = |_: usize| ScalarField::from(42u64);
+        let f_const = |_: u8| ScalarField::from(42u64);
         // p(x) = (x + 1)(x + 10)(x - 100)
-        let f_poly = |x: usize| {
+        let f_poly = |x: u8| {
             let x = ScalarField::from(x);
             (&x + ScalarField::from(1u64))
                 * (&x + ScalarField::from(10u64))
                 * (&x - ScalarField::from(100u64))
         };
         // p(x) = (x + 2) / (x + 1) (on domain)
-        let f_non_poly = |x: usize| {
+        let f_non_poly = |x: u8| {
             let x = ScalarField::from(x);
             (&x + ScalarField::from(2u64)) * (&x + ScalarField::from(1u64)).inverse().unwrap()
         };
@@ -222,7 +220,7 @@ mod tests {
         let queries = openings
             .iter()
             .map(|(poly_f, z)| {
-                let poly = LagrangeBasis::new(array::from_fn(poly_f));
+                let poly = LagrangeBasis::new(array_long(poly_f));
                 ProverQuery {
                     poly,
                     commitment: None,
@@ -236,9 +234,9 @@ mod tests {
         let queries = openings
             .iter()
             .map(|(poly_f, z)| VerifierQuery {
-                commitment: LagrangeBasis::new(array::from_fn(poly_f)).commit(),
+                commitment: LagrangeBasis::new(array_long(poly_f)).commit(),
                 z: *z,
-                y: poly_f(*z as usize),
+                y: poly_f(*z),
             })
             .collect();
         assert!(proof.verify(queries, &mut transcript));

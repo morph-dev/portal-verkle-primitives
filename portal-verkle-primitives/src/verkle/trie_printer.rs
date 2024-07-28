@@ -81,7 +81,7 @@ impl TriePrinter for BranchNode {
                 writer,
                 "{:identation$}{index:02x} - {:?}",
                 "",
-                child.commitment()
+                child.commitment().as_point()
             )?;
             child.print_trie_with_identation(writer, identation + 2)?;
         }
@@ -111,7 +111,7 @@ impl TriePrinter for LeafNode {
     ) -> io::Result<()> {
         writeln!(writer, "{:identation$}stem - {}", "", self.stem())?;
 
-        writeln!(writer, "{:identation$}C1 - {:?}", "", self.c1())?;
+        writeln!(writer, "{:identation$}C1 - {:?}", "", self.c1().as_point())?;
         for index in 0..(VERKLE_NODE_WIDTH / 2) {
             if let Some(value) = self.get(index as u8) {
                 writeln!(
@@ -124,7 +124,7 @@ impl TriePrinter for LeafNode {
             }
         }
 
-        writeln!(writer, "{:identation$}C2 - {:?}", "", self.c2())?;
+        writeln!(writer, "{:identation$}C2 - {:?}", "", self.c2().as_point())?;
         for index in (VERKLE_NODE_WIDTH / 2)..VERKLE_NODE_WIDTH {
             if let Some(value) = self.get(index as u8) {
                 writeln!(
