@@ -4,11 +4,10 @@ use alloy_primitives::B256;
 use ssz_derive::{Decode, Encode};
 
 use crate::{
-    constants::{
-        LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX, PORTAL_NETWORK_NODE_WIDTH,
-    },
+    constants::{LEAF_MARKER_INDEX, LEAF_STEM_INDEX, PORTAL_NETWORK_NODE_WIDTH},
     proof::{MultiProof, VerifierMultiQuery},
     ssz::{SparseVector, TriePathCommitments},
+    utils::{array_short, leaf_utils},
     Point, Stem, TrieValue, TrieValueSplit, CRS,
 };
 
@@ -52,20 +51,14 @@ impl LeafFragmentNodeWithProof {
         multi_query
             .add_trie_path_proof(self.trie_path.zip_with_stem(stem), &self.bundle_commitment);
 
-        // 3.2 Verify [marker, stem, c1 or c2] openings to bundle commitment
-        let suffix_commitment_index =
-            if (self.node.fragment_index as usize) < PORTAL_NETWORK_NODE_WIDTH / 2 {
-                LEAF_C1_INDEX
-            } else {
-                LEAF_C2_INDEX
-            };
+        // 3.2 Verify [marker, stem, c1 /c2] openings to bundle commitment
         multi_query.add_for_commitment(
             &self.bundle_commitment,
             [
                 (LEAF_MARKER_INDEX, self.marker.into()),
                 (LEAF_STEM_INDEX, stem.into()),
                 (
-                    suffix_commitment_index,
+                    leaf_utils::leaf_suffix_index(self.node.fragment_index),
                     self.suffix_commitment.map_to_scalar_field(),
                 ),
             ],
@@ -74,15 +67,14 @@ impl LeafFragmentNodeWithProof {
         // 3.3 Verify children openings to suffix commitment (c1 or c2)
         multi_query.add_for_commitment(
             &self.suffix_commitment,
-            self.node
-                .children
-                .iter()
-                .enumerate()
-                .flat_map(|(child_index, child)| {
-                    let (low_index, high_index) = self.node.bases_indices(child_index as u8);
-                    let (low_value, high_value) = child.split();
-                    [(low_index, low_value), (high_index, high_value)]
-                }),
+            array_short(|child_index| {
+                let [low_index, high_index] =
+                    leaf_utils::suffix_indices(self.node.fragment_index, child_index);
+                let (low_value, high_value) = self.node.children[child_index as usize].split();
+                [(low_index, low_value), (high_index, high_value)]
+            })
+            .into_iter()
+            .flatten(),
         );
 
         if self.multiproof.verify_portal_network_proof(multi_query) {
@@ -126,7 +118,8 @@ impl LeafFragmentNode {
             self.children
                 .iter_enumerated_set_items()
                 .map(|(child_index, child)| {
-                    let (low_index, high_index) = self.bases_indices(child_index as u8);
+                    let [low_index, high_index] =
+                        leaf_utils::suffix_indices(self.fragment_index, child_index as u8);
                     let (low_value, high_value) = child.split();
                     CRS::commit_sparse(&[(low_index, low_value), (high_index, high_value)])
                 })
@@ -150,15 +143,5 @@ impl LeafFragmentNode {
             ));
         }
         Ok(())
-    }
-
-    /// Returns the bases indices that correspond to the child index.
-    fn bases_indices(&self, child_index: u8) -> (u8, u8) {
-        let suffix_fragment_index = self.fragment_index % (PORTAL_NETWORK_NODE_WIDTH / 2) as u8;
-        let suffix_child_index =
-            child_index + suffix_fragment_index * PORTAL_NETWORK_NODE_WIDTH as u8;
-        let low_index = 2 * suffix_child_index;
-        let high_index = low_index + 1;
-        (low_index, high_index)
     }
 }

@@ -1,14 +1,15 @@
 use alloy_primitives::B256;
+use itertools::Itertools;
 
 use crate::{
-    constants::{PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH},
+    constants::PORTAL_NETWORK_NODE_WIDTH,
     portal::{
         BranchBundleNode, BranchBundleNodeWithProof, BranchFragmentNode,
         BranchFragmentNodeWithProof,
     },
     proof::{lagrange_basis::LagrangeBasis, BundleProof, MultiProof, ProverMultiQuery},
     ssz::{SparseVector, TriePathWithCommitments},
-    utils::{array_long, array_short},
+    utils::{array_long, array_short, branch_utils},
     Point, ScalarField, CRS,
 };
 
@@ -17,25 +18,23 @@ use super::{branch::BranchNode, commitment::Commitment};
 struct FragmentInfo<'a> {
     fragment_index: u8,
     commitment: Point,
-    children: [&'a Commitment; PORTAL_NETWORK_NODE_WIDTH],
+    children: SparseVector<&'a Commitment, PORTAL_NETWORK_NODE_WIDTH>,
 }
 
 impl<'a> FragmentInfo<'a> {
-    fn new(fragment_index: u8, children: [&'a Commitment; PORTAL_NETWORK_NODE_WIDTH]) -> Self {
+    fn new(
+        fragment_index: u8,
+        children: SparseVector<&'a Commitment, PORTAL_NETWORK_NODE_WIDTH>,
+    ) -> Self {
         let commitment = CRS::commit_sparse(
             &children
-                .iter()
-                .enumerate()
-                .filter_map(|(fragment_child_index, child)| {
-                    if child.is_zero() {
-                        None
-                    } else {
-                        let child_index =
-                            get_child_index(fragment_index, fragment_child_index as u8);
-                        Some((child_index, child.to_scalar()))
-                    }
+                .iter_enumerated_set_items()
+                .map(|(fragment_child_index, child)| {
+                    let child_index =
+                        branch_utils::child_index(fragment_index, fragment_child_index as u8);
+                    (child_index, child.to_scalar())
                 })
-                .collect::<Vec<_>>(),
+                .collect_vec(),
         );
         Self {
             fragment_index,
@@ -46,8 +45,10 @@ impl<'a> FragmentInfo<'a> {
 
     fn to_lagrange_basis(&self) -> LagrangeBasis {
         LagrangeBasis::new(array_long(|child_index| {
-            if get_fragment_index(child_index) == self.fragment_index {
-                self.children[get_fragment_child_index(child_index) as usize].to_scalar()
+            if branch_utils::fragment_index(child_index) == self.fragment_index {
+                self.children[branch_utils::fragment_child_index(child_index) as usize]
+                    .map(Commitment::to_scalar)
+                    .unwrap_or_else(ScalarField::zero)
             } else {
                 ScalarField::zero()
             }
@@ -58,12 +59,11 @@ impl<'a> FragmentInfo<'a> {
         self.commitment.is_zero()
     }
 }
-
 pub struct PortalBranchNodeBuilder<'a> {
-    node: &'a BranchNode,
+    branch_node: &'a BranchNode,
     fragments: [FragmentInfo<'a>; PORTAL_NETWORK_NODE_WIDTH],
     trie_path: TriePathWithCommitments,
-    trie_path_prover_multiquery: ProverMultiQuery,
+    trie_path_multiquery: ProverMultiQuery,
 }
 
 impl<'a> PortalBranchNodeBuilder<'a> {
@@ -78,20 +78,19 @@ impl<'a> PortalBranchNodeBuilder<'a> {
 
         let fragments = array_short(|fragment_index| {
             let fragment_children = array_short(|fragment_child_index| {
-                let child_index = get_child_index(fragment_index, fragment_child_index);
-                node.get_child(child_index).commitment()
+                let child_index = branch_utils::child_index(fragment_index, fragment_child_index);
+                let commitment = node.get_child(child_index).commitment();
+                if commitment.is_zero() {
+                    None
+                } else {
+                    Some(commitment)
+                }
             });
-            FragmentInfo::new(fragment_index, fragment_children)
+            FragmentInfo::new(fragment_index, SparseVector::new(fragment_children))
         });
 
-        let trie_path_with_commitments = trie_path
-            .iter()
-            .map(|(branch_node, child_index)| (branch_node.commitment().to_point(), *child_index))
-            .collect::<Vec<_>>()
-            .try_into()?;
-
-        let mut trie_path_prover_multiquery = ProverMultiQuery::new();
-        trie_path_prover_multiquery.add_trie_path_proof(trie_path.iter().map(
+        let mut trie_path_multiquery = ProverMultiQuery::new();
+        trie_path_multiquery.add_trie_path_proof(trie_path.iter().map(
             |(branch_node, child_index)| {
                 (
                     branch_node.commitment().to_point(),
@@ -101,10 +100,10 @@ impl<'a> PortalBranchNodeBuilder<'a> {
             },
         ));
         Ok(Self {
-            node,
+            branch_node: node,
             fragments,
-            trie_path: trie_path_with_commitments,
-            trie_path_prover_multiquery,
+            trie_path: trie_path.iter().cloned().collect(),
+            trie_path_multiquery,
         })
     }
 
@@ -122,17 +121,10 @@ impl<'a> PortalBranchNodeBuilder<'a> {
             if fragment.is_zero() {
                 continue;
             }
-            let openings = (0..VERKLE_NODE_WIDTH).filter_map(|child_index| {
-                if fragment.fragment_index == get_fragment_index(child_index as u8) {
-                    None
-                } else {
-                    Some(child_index as u8)
-                }
-            });
             bundle_multiquery.add_vector(
                 fragment.commitment.clone(),
                 fragment.to_lagrange_basis(),
-                openings,
+                branch_utils::openings_for_bundle(fragment.fragment_index),
             );
         }
 
@@ -147,23 +139,20 @@ impl<'a> PortalBranchNodeBuilder<'a> {
             node: self.bundle_node(),
             block_hash,
             trie_path: self.trie_path.clone(),
-            multiproof: MultiProof::create_portal_network_proof(
-                self.trie_path_prover_multiquery.clone(),
-            ),
+            multiproof: MultiProof::create_portal_network_proof(self.trie_path_multiquery.clone()),
         }
     }
 
+    pub fn fragment_commitment(&self, fragment_index: u8) -> &Point {
+        &self.fragments[fragment_index as usize].commitment
+    }
+
     pub fn fragment_node(&self, fragment_index: u8) -> BranchFragmentNode {
-        let fragment_children = self.fragments[fragment_index as usize]
+        let fragment = &self.fragments[fragment_index as usize];
+        let fragment_children = fragment
             .children
             .each_ref()
-            .map(|commitment| {
-                if commitment.is_zero() {
-                    None
-                } else {
-                    Some(commitment.to_point())
-                }
-            });
+            .map(|commitment| commitment.map(Commitment::to_point));
         BranchFragmentNode::new(fragment_index, SparseVector::new(fragment_children))
     }
 
@@ -172,15 +161,13 @@ impl<'a> PortalBranchNodeBuilder<'a> {
         fragment_index: u8,
         block_hash: B256,
     ) -> BranchFragmentNodeWithProof {
-        let bundle_commitment = self.node.commitment().to_point();
+        let bundle_commitment = self.branch_node.commitment().to_point();
 
-        let mut multiquery = self.trie_path_prover_multiquery.clone();
+        let mut multiquery = self.trie_path_multiquery.clone();
         multiquery.add_vector(
             bundle_commitment.clone(),
-            self.node.to_lagrange_basis(),
-            array_short(|fragment_child_index| {
-                get_child_index(fragment_index, fragment_child_index)
-            }),
+            self.branch_node.to_lagrange_basis(),
+            branch_utils::openings(fragment_index),
         );
 
         BranchFragmentNodeWithProof {
@@ -191,16 +178,4 @@ impl<'a> PortalBranchNodeBuilder<'a> {
             multiproof: MultiProof::create_portal_network_proof(multiquery),
         }
     }
-}
-
-fn get_child_index(fragment_index: u8, fragment_child_index: u8) -> u8 {
-    fragment_child_index + fragment_index * PORTAL_NETWORK_NODE_WIDTH as u8
-}
-
-fn get_fragment_index(child_index: u8) -> u8 {
-    child_index / PORTAL_NETWORK_NODE_WIDTH as u8
-}
-
-fn get_fragment_child_index(child_index: u8) -> u8 {
-    child_index % PORTAL_NETWORK_NODE_WIDTH as u8
 }

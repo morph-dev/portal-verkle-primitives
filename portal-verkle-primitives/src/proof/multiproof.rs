@@ -84,7 +84,7 @@ impl MultiProof {
         let inverse_denominators = agg_polynomials
             .keys()
             .map(|z| &t - ScalarField::from(*z))
-            .collect::<Vec<_>>()
+            .collect_vec()
             .batch_inverse();
 
         // h(x)
@@ -148,13 +148,13 @@ impl MultiProof {
         let inverse_denominators = multiquery
             .iter()
             .map(|query| &t - ScalarField::from(query.z))
-            .collect::<Vec<_>>()
+            .collect_vec()
             .batch_inverse();
 
         // coeff_i
         let coefficients = zip_eq(powers_of_r, inverse_denominators)
             .map(|(power_of_r, inverse_denominator)| power_of_r * inverse_denominator)
-            .collect::<Vec<_>>();
+            .collect_vec();
 
         // 4. Compute E (commitment to h(x): E = [h(x)])
         // E = ∑ r^i * C_i / (t - z_i) = ∑ coeff_i * C_i

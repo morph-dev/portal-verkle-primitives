@@ -5,11 +5,11 @@ use ssz_derive::{Decode, Encode};
 
 use crate::{
     constants::{
-        LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX,
-        PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH,
+        LEAF_C1_INDEX, LEAF_C2_INDEX, LEAF_MARKER_INDEX, LEAF_STEM_INDEX, PORTAL_NETWORK_NODE_WIDTH,
     },
     proof::{BundleProof, MultiProof, VerifierMultiQuery},
     ssz::{SparseVector, TriePathCommitments},
+    utils::leaf_utils,
     Point, ScalarField, Stem, CRS,
 };
 
@@ -95,7 +95,7 @@ impl LeafBundleNode {
 
     pub fn commitment(&self) -> &Point {
         self.commitment.get_or_init(|| {
-            let (c1, c2) = self.c1_c2();
+            let [c1, c2] = self.c1_c2();
             CRS::commit_sparse(&[
                 (LEAF_MARKER_INDEX, ScalarField::from(self.marker)),
                 (LEAF_STEM_INDEX, ScalarField::from(&self.stem)),
@@ -105,17 +105,10 @@ impl LeafBundleNode {
         })
     }
 
-    pub fn c1_c2(&self) -> (Point, Point) {
+    pub fn c1_c2(&self) -> [Point; 2] {
         let (first_half, second_half) = self.fragments.split_at(PORTAL_NETWORK_NODE_WIDTH / 2);
-        let sum_of_optional_points = |fragments: &[Option<Point>]| {
-            fragments
-                .iter()
-                .flat_map(|fragment| fragment.as_ref())
-                .sum::<Point>()
-        };
-        let c1 = sum_of_optional_points(first_half);
-        let c2 = sum_of_optional_points(second_half);
-        (c1, c2)
+        [first_half, second_half]
+            .map(|fragments| fragments.iter().filter_map(Option::as_ref).sum::<Point>())
     }
 
     pub fn verify_bundle_proof(&self) -> Result<(), NodeVerificationError> {
@@ -123,17 +116,9 @@ impl LeafBundleNode {
         for (fragment_index, fragment_commitment) in self.fragments.iter_enumerated_set_items() {
             multiquery.add_for_commitment(
                 fragment_commitment,
-                (0..VERKLE_NODE_WIDTH)
-                    .filter(|child_index| child_index / PORTAL_NETWORK_NODE_WIDTH != fragment_index)
-                    .flat_map(|child_index| {
-                        let suffix_child_index = (child_index % (VERKLE_NODE_WIDTH / 2)) as u8;
-                        let low_index = suffix_child_index * 2;
-                        let high_index = low_index + 1;
-                        [
-                            (low_index, ScalarField::zero()),
-                            (high_index, ScalarField::zero()),
-                        ]
-                    }),
+                leaf_utils::suffix_openings_for_bundle(fragment_index as u8)
+                    .into_iter()
+                    .map(|index| (index, ScalarField::zero())),
             );
         }
         if self.bundle_proof.verify_portal_network_proof(multiquery) {

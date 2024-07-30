@@ -7,6 +7,7 @@ pub mod branch;
 pub mod commitment;
 pub mod leaf;
 pub mod portal_branch_node_builder;
+pub mod portal_leaf_node_builder;
 
 pub enum Node {
     Empty,

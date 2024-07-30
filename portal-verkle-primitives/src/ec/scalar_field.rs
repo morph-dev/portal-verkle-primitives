@@ -8,7 +8,7 @@ use alloy_primitives::B256;
 use ark_ff::batch_inversion_and_mul;
 use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Field, Fr, One, PrimeField, Zero};
 use derive_more::Constructor;
-use itertools::zip_eq;
+use itertools::{zip_eq, Itertools};
 use overload::overload;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz::{Decode, Encode};
@@ -226,7 +226,7 @@ where
             .as_mut()
             .iter()
             .map(|value| value.inner())
-            .collect::<Vec<_>>();
+            .collect_vec();
         batch_inversion_and_mul(&mut values, &coeff.inner());
         for (original, inverted) in zip_eq(self.as_mut(), values) {
             original.0 = inverted;
@@ -274,7 +274,7 @@ mod tests {
                     &m * v.inverse().unwrap()
                 }
             })
-            .collect::<Vec<_>>();
+            .collect_vec();
         let inverted = values.batch_inverse_and_mul(&m);
 
         assert_eq!(inverted, expected);

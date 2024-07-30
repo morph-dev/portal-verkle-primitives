@@ -1,6 +1,6 @@
 use std::iter;
 
-use itertools::{chain, zip_eq};
+use itertools::{chain, zip_eq, Itertools};
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
 use ssz_types::{typenum, FixedVector};
@@ -151,7 +151,7 @@ impl IpaProof {
                 transcript.append_point("R", c_r);
                 transcript.challenge_scalar("x")
             })
-            .collect::<Vec<_>>();
+            .collect_vec();
         let x_inv = x.clone().batch_inverse();
 
         // 3. Compute scalars that we will use to multiply G_i: g_coeff

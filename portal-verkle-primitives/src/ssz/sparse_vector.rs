@@ -1,7 +1,7 @@
 use std::array;
 
 use derive_more::{Constructor, Deref, Index, IndexMut};
-use itertools::zip_eq;
+use itertools::{zip_eq, Itertools};
 use ssz::{Decode, Encode, BYTES_PER_LENGTH_OFFSET};
 
 #[derive(Debug, Clone, PartialEq, Eq, Constructor, Index, IndexMut, Deref)]
@@ -98,7 +98,7 @@ impl<T: Decode, const N: usize> Decode for SparseVector<T, N> {
                     }
                 })
             })
-            .collect::<Vec<_>>();
+            .collect_vec();
 
         if set_indices.iter().max().unwrap_or(&0) >= &N {
             return Err(ssz::DecodeError::BytesInvalid(

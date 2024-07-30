@@ -3,6 +3,7 @@ use std::{fmt::Debug, iter::Sum, ops};
 use alloy_primitives::B256;
 use banderwagon::{CanonicalDeserialize, CanonicalSerialize, Element};
 use derive_more::Constructor;
+use itertools::Itertools;
 use overload::overload;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use ssz::{Decode, Encode};
@@ -41,8 +42,8 @@ impl Point {
         points: impl IntoIterator<Item = &'a Self>,
         scalars: impl IntoIterator<Item = &'b ScalarField>,
     ) -> Self {
-        let points = points.into_iter().map(|p| p.inner()).collect::<Vec<_>>();
-        let scalars = scalars.into_iter().map(|s| s.inner()).collect::<Vec<_>>();
+        let points = points.into_iter().map(|p| p.inner()).collect_vec();
+        let scalars = scalars.into_iter().map(|s| s.inner()).collect_vec();
         Self(banderwagon::multi_scalar_mul(&points, &scalars))
     }
 }

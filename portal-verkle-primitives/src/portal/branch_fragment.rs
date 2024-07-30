@@ -7,6 +7,7 @@ use crate::{
     constants::PORTAL_NETWORK_NODE_WIDTH,
     proof::{MultiProof, VerifierMultiQuery},
     ssz::{SparseVector, TriePathWithCommitments},
+    utils::{array_short, branch_utils},
     Point, ScalarField, CRS,
 };
 
@@ -45,19 +46,15 @@ impl BranchFragmentNodeWithProof {
         // 3.2. Verify children openings to bundle commitment
         multi_query.add_for_commitment(
             &self.bundle_commitment,
-            self.node
-                .children
-                .iter()
-                .enumerate()
-                .map(|(child_index, child)| {
-                    (
-                        child_index as u8,
-                        child
-                            .as_ref()
-                            .map(Point::map_to_scalar_field)
-                            .unwrap_or_else(ScalarField::zero),
-                    )
-                }),
+            array_short(|fragment_child_index| {
+                (
+                    branch_utils::child_index(self.node.fragment_index, fragment_child_index),
+                    self.node.children[fragment_child_index as usize]
+                        .as_ref()
+                        .map(Point::map_to_scalar_field)
+                        .unwrap_or_else(ScalarField::zero),
+                )
+            }),
         );
 
         if self.multiproof.verify_portal_network_proof(multi_query) {
@@ -100,10 +97,11 @@ impl BranchFragmentNode {
         self.commitment.get_or_init(|| {
             self.children
                 .iter_enumerated_set_items()
-                .map(|(child_index, child)| {
-                    let index =
-                        child_index as u8 + self.fragment_index * PORTAL_NETWORK_NODE_WIDTH as u8;
-                    CRS::commit_single(index, &child.map_to_scalar_field())
+                .map(|(fragment_child_index, child)| {
+                    CRS::commit_single(
+                        branch_utils::child_index(self.fragment_index, fragment_child_index as u8),
+                        &child.map_to_scalar_field(),
+                    )
                 })
                 .sum()
         })

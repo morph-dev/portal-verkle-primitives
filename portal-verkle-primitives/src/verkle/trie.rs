@@ -62,20 +62,20 @@ impl VerkleTrie {
         &'me self,
         stem: &Stem,
     ) -> Result<PathToLeaf<'me>, VerkleTrieError> {
-        let mut branches = vec![];
+        let mut trie_path = vec![];
 
         let mut node = &self.root_node;
         let mut depth = 0;
 
         loop {
             let child_index = stem[depth];
-            branches.push((node, child_index));
+            trie_path.push((node, child_index));
             node = match node.get_child(child_index) {
                 Node::Empty => return Err(VerkleTrieError::NodeNotFound { stem: *stem, depth }),
                 Node::Branch(next_node) => next_node,
                 Node::Leaf(leaf) => {
                     if leaf.stem() == stem {
-                        return Ok(PathToLeaf { branches, leaf });
+                        return Ok(PathToLeaf { trie_path, leaf });
                     } else {
                         return Err(VerkleTrieError::UnexpectedStem {
                             expected: *stem,

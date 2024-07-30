@@ -4,9 +4,10 @@ use alloy_primitives::B256;
 use ssz_derive::{Decode, Encode};
 
 use crate::{
-    constants::{PORTAL_NETWORK_NODE_WIDTH, VERKLE_NODE_WIDTH},
+    constants::PORTAL_NETWORK_NODE_WIDTH,
     proof::{BundleProof, MultiProof, VerifierMultiQuery},
     ssz::{SparseVector, TriePathWithCommitments},
+    utils::branch_utils,
     Point, ScalarField,
 };
 
@@ -86,9 +87,9 @@ impl BranchBundleNode {
         for (fragment_index, fragment_commitment) in self.fragments.iter_enumerated_set_items() {
             multiquery.add_for_commitment(
                 fragment_commitment,
-                (0..VERKLE_NODE_WIDTH)
-                    .filter(|child_index| child_index / PORTAL_NETWORK_NODE_WIDTH != fragment_index)
-                    .map(|child_index| (child_index as u8, ScalarField::zero())),
+                branch_utils::openings_for_bundle(fragment_index as u8)
+                    .into_iter()
+                    .map(|index| (index, ScalarField::zero())),
             );
         }
         if self.bundle_proof.verify_portal_network_proof(multiquery) {
