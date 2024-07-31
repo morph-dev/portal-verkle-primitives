@@ -12,7 +12,7 @@ use crate::{
     ssz::{SparseVector, TriePathCommitments},
     utils::{array_long_const, array_short, leaf_utils},
     verkle::PathToLeaf,
-    Point, ScalarField, TrieValue, CRS,
+    Point, ScalarField, Stem, TrieValue, CRS,
 };
 
 use super::{commitment::Commitment, leaf::LeafNode};
@@ -115,6 +115,14 @@ impl<'a> PortalLeafNodeBuilder<'a> {
             trie_path: trie_path_branches.iter().cloned().collect(),
             trie_path_multiquery,
         }
+    }
+
+    pub fn stem(&self) -> &Stem {
+        self.leaf_node.stem()
+    }
+
+    pub fn bundle_commitment(&self) -> &Point {
+        self.leaf_node.commitment().as_point()
     }
 
     pub fn bundle_node(&self) -> LeafBundleNode {

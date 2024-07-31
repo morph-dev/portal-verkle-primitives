@@ -107,6 +107,10 @@ impl<'a> PortalBranchNodeBuilder<'a> {
         })
     }
 
+    pub fn bundle_commitment(&self) -> &Point {
+        self.branch_node.commitment().as_point()
+    }
+
     pub fn bundle_node(&self) -> BranchBundleNode {
         let fragment_commitments = self.fragments.each_ref().map(|fragment| {
             if fragment.is_zero() {
