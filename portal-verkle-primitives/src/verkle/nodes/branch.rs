@@ -66,6 +66,10 @@ impl BranchNode {
     /// Returns by how much the commitmant hash has changed and the path to the new branch node if
     /// one was created.
     pub fn update(&mut self, state_write: &StemStateWrite) -> (ScalarField, NewBranchNode) {
+        if state_write.writes.is_empty() {
+            return (ScalarField::zero(), None);
+        }
+
         let index = state_write.stem[self.depth];
         let child = &mut self.children[index as usize];
         match child {

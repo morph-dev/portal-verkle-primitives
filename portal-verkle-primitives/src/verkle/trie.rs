@@ -51,7 +51,11 @@ impl VerkleTrie {
     pub fn update(&mut self, state_writes: &StateWrites) -> HashSet<TriePath> {
         let mut created_branches = HashSet::new();
         for stem_state_write in state_writes.iter() {
-            if let Some(created_branch) = self.root_node.update(stem_state_write).1 {
+            if stem_state_write.writes.is_empty() {
+                continue;
+            }
+            let (_, created_branch) = self.root_node.update(stem_state_write);
+            if let Some(created_branch) = created_branch {
                 created_branches.insert(created_branch);
             }
         }
